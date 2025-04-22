@@ -2,7 +2,7 @@
 
 This repository is designated for the CSCI2952N group project.
 
-# cycloMamba
+# CycloMamba
 
 A reproducible Python 3.9 environment using Conda and pip-based requirements.
 
