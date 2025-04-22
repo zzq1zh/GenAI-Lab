@@ -29,7 +29,8 @@ sequences = []
 
 with open(csv_file, newline='', encoding="utf-8") as f:
     reader = csv.DictReader(f)
-    for row in tqdm(reader, desc="Reading sequences"):
+    max_records = 10000
+    for row in tqdm(islice(reader, max_records), desc="Reading sequences"):
         seq = row.get("Sequence")
         if seq and len(seq) < 262144:
             sequences.append(seq.upper())
