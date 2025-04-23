@@ -151,7 +151,7 @@ model = load_mamba(len(vocab))
 # ========== Training ==========
 training_args = TrainingArguments(
     output_dir="./weights/",
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=1,
     num_train_epochs=3,
     logging_steps=10,
     save_steps=10000,

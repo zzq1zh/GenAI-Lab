@@ -1,1 +1,4 @@
 datasets/
+saved_model/
+tokenized_dataset/
+weights/

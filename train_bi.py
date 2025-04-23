@@ -46,7 +46,7 @@ model.load_state_dict(state_dict)
 
 training_args = TrainingArguments(
     output_dir="./saved_model/",
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=1,
     gradient_accumulation_steps=8,
     num_train_epochs=3,
     logging_steps=10,
@@ -55,7 +55,7 @@ training_args = TrainingArguments(
     fp16=True,
     remove_unused_columns=False,
     report_to="none",
-    disable_tqdm=True
+    disable_tqdm=False
 )
 
 
