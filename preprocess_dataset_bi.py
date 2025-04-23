@@ -6,13 +6,17 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import (
+    PreTrainedModel,
+    PretrainedConfig,
     PreTrainedTokenizerFast,
     AutoConfig,
-    AutoModelForCausalLM,
+    AutoModelForMaskedLM,
     Trainer,
     TrainingArguments,
     DataCollatorForLanguageModeling
 )
+from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel
+from mamba_ssm.models.config_mamba import MambaConfig
 import torch
 import math
 import csv
@@ -20,7 +24,7 @@ from tqdm import tqdm
 import sys
 from itertools import islice
 import os
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+from BiMambaForMaskedLM import BiMambaForMaskedLM
 
 # Load and clean eccDNA sequences
 csv.field_size_limit(sys.maxsize)
@@ -43,7 +47,7 @@ from functools import reduce
 from tqdm import tqdm
 
 k = 6
-special_tokens = ["[PAD]", "[UNK]", "[BOS]", "[EOS]"]
+special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[EOS]", "[MASK]"]
 
 def count_kmers_in_seq(seq, k=6):
     local_counter = Counter()
@@ -102,8 +106,9 @@ tokenizer = PreTrainedTokenizerFast(
     tokenizer_object=tokenizer_model,
     unk_token="[UNK]",
     pad_token="[PAD]",
-    bos_token="[BOS]",
+    bos_token="[CLS]",
     eos_token="[EOS]",
+    mask_token="[MASK]",
 )
 
 # Encode sequences for causal LM
@@ -115,7 +120,7 @@ def encode_batch(batch):
             seq = "".join(seq)
         kmers = get_kmers(seq, k)
         ids = [vocab.get(kmer, vocab["[UNK]"]) for kmer in kmers]
-        ids = [vocab["[BOS]"]] + ids
+        ids = [vocab["[CLS]"]] + ids
         batch_input_ids.append(ids)
     
     return {"input_ids": batch_input_ids}
@@ -127,43 +132,21 @@ tokenized_dataset.save_to_disk("tokenized_dataset/")
 # Data collator for autoregressive training
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
-    mlm=False
+    mlm=True,
+    mlm_probability=0.15
 )
-
-# Circular Positional Encoding
-def circular_positional_encoding(seq_len, embed_dim, device="cpu", alpha=1):
-    positions = torch.arange(seq_len, dtype=torch.float32, device=device)
-    angle = 2 * math.pi * positions / seq_len
-    pe = torch.stack([torch.sin(angle), torch.cos(angle)], dim=1)
-    repeats = math.ceil(embed_dim / 2)
-    pe = pe.repeat(1, repeats)[:, :embed_dim]
-    return alpha * pe
-
-# Load single-directional Mamba with PE
-def load_mamba_with_pe(vocab_size, alpha=1):
+    
+# Load bidirectional Mamba
+def load_mamba(vocab_size):
     config = AutoConfig.from_pretrained("state-spaces/mamba-130m")
     config.vocab_size = vocab_size
-    config.output_hidden_states = True
-    model = AutoModelForCausalLM.from_config(config)
+    config.pad_token_id = 0
+    
+    model = BiMambaForMaskedLM(config)
 
-    # Patch forward to add circular PE
-    original_forward = model.forward
-    def patched_forward(*args, **kwargs):
-        if 'inputs_embeds' in kwargs:
-            inputs_embeds = kwargs['inputs_embeds']
-        else:
-            inputs_embeds = model.get_input_embeddings()(kwargs['input_ids'])
-        seq_len = inputs_embeds.size(1)
-        pe = circular_positional_encoding(seq_len, inputs_embeds.size(-1), device=inputs_embeds.device, alpha=alpha)
-        inputs_embeds = inputs_embeds + pe.unsqueeze(0)
-        kwargs['inputs_embeds'] = inputs_embeds
-        kwargs.pop('input_ids', None)
-
-        return original_forward(*args, **kwargs)
-    model.forward = patched_forward
     return model
 
-model = load_mamba_with_pe(len(vocab), alpha=1)
+model = load_mamba(len(vocab))
 
 # ========== Training ==========
 training_args = TrainingArguments(

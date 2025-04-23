@@ -27,6 +27,7 @@ from datasets import load_from_disk
 
 # Load model and tokenizer
 model = AutoModelForCausalLM.from_pretrained("saved_model/")
+tokenizer = AutoTokenizer.from_pretrained("saved_model/")
 
 # Reconstruct training arguments
 training_args = TrainingArguments(
