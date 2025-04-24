@@ -33,10 +33,9 @@ sequences = []
 
 with open(csv_file, newline='', encoding="utf-8") as f:
     reader = csv.DictReader(f)
-    max_records = 10000
-    for row in tqdm(islice(reader, max_records), desc="Reading sequences"):
+    for row in tqdm(reader, desc="Reading sequences"):
         seq = row.get("Sequence")
-        if seq and len(seq) < 262144:
+        if seq and len(seq) < 100000:
             sequences.append(seq.upper())
 print(f"Loaded {len(sequences)} valid eccDNA sequences")
 
