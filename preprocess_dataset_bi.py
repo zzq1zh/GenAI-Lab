@@ -92,7 +92,7 @@ tokenized_dataset.save_to_disk("tokenized_dataset/")
 
 # Data collator for autoregressive training
 data_collator = DataCollatorForLanguageModeling(
-    tokenizer=tokenizer,
+    tokenizer=fast_tokenizer,
     mlm=True,
     mlm_probability=0.15
 )
@@ -107,7 +107,7 @@ def load_mamba(vocab_size):
 
     return model
 
-model = load_mamba(len(vocab))
+model = load_mamba(vocab_size)
 
 # ========== Training ==========
 training_args = TrainingArguments(

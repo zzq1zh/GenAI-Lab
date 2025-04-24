@@ -27,15 +27,8 @@ tokenizer.bos_token = "[BOS]"
 tokenizer.eos_token = "[EOS]"
 
 # Load model 
-vocab = {}
-with open("saved_model/vocab.txt", "r") as f:
-    for line in f:
-        token, idx = line.strip().split("\t")
-        vocab[token] = int(idx)
-id_to_token = {v: k for k, v in vocab.items()}
-
 config = AutoConfig.from_pretrained("state-spaces/mamba-130m")
-config.vocab_size = len(vocab)
+config.vocab_size = tokenizer.vocab_size
 config.pad_token_id = 0
 
 # Reconstruct training arguments
