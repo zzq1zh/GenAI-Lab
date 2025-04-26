@@ -82,11 +82,9 @@ class BiMambaForMaskedLM(PreTrainedModel):
         self.mamba_backward  = MambaLMHeadModel(mamba_cfg)
         self.lm_head_proj    = nn.Linear(config.d_model * 2, config.d_model, bias=False)
 
-        # your custom patches (circular conv, accept_embeds…)
+        # Patch mixer_forward_to accept embeddings
         patch_mixer_forward_to_accept_embeddings(self.mamba_forward)
         patch_mixer_forward_to_accept_embeddings(self.mamba_backward)
-        inject_circular_convolution(self.mamba_forward)
-        inject_circular_convolution(self.mamba_backward)
 
         # self.post_init()  # wires up HF weight-tying & save/load
 
