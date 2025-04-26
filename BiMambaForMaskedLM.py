@@ -77,7 +77,7 @@ class BiMambaForMaskedLM(PreTrainedModel):
         mamba_cfg = convert_hf_config_to_mamba(config)
 
         # your embedding + two Mamba directions + proj
-        self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
+        self.token_embedding = nn.Embedding(config.vocab_size, config.d_model, padding_idx=config.pad_token_id)
         self.mamba_forward   = MambaLMHeadModel(mamba_cfg)
         self.mamba_backward  = MambaLMHeadModel(mamba_cfg)
         self.lm_head_proj    = nn.Linear(config.d_model * 2, config.d_model, bias=False)
