@@ -24,9 +24,9 @@ from transformers import AutoConfig, Trainer, TrainingArguments, DataCollatorFor
 from safetensors.torch import load_file as load_safetensors
 from BiMambaForMaskedLM import BiMambaForMaskedLM
 
-import wandb
-from transformers.integrations import WandbCallback
-wandb.init(project="eccDNA-bimamba", name="bimamba-4gpu")
+# import wandb
+# from transformers.integrations import WandbCallback
+# wandb.init(project="eccDNA-bimamba", name="bimamba-4gpu")
 
 
 # Load tokenizer
@@ -38,7 +38,7 @@ tokenizer.mask_token = "[MASK]"
 tokenizer.cls_token = "[CLS]"
 tokenizer.eos_token = "[EOS]"
 
-config = AutoConfig.from_pretrained("state-spaces/mamba-130m")
+config = AutoConfig.from_pretrained("state-spaces/mamba2-130m")
 config.vocab_size = tokenizer.vocab_size
 config.pad_token_id = 0
 
@@ -73,7 +73,7 @@ training_args = TrainingArguments(
     fp16=False,
     bf16=True,
     remove_unused_columns=False,
-    report_to="wandb",                 # Enable WandB logging
+    report_to="none",                 # Enable WandB logging
     run_name="bimamba-4gpu",           # Same as before
     gradient_checkpointing=False,      # Off to avoid extra memory usage
     ddp_find_unused_parameters=True
