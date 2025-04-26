@@ -35,7 +35,7 @@ def patch_mixer_forward_to_accept_embeddings(model):
     allowing it to accept either input_ids or inputs_embeds.
     """
 
-    def new_forward(self, input_ids=None, inputs_embeds=None, inference_params=None, **mixer_kwargs):
+    def new_forward(self, input_ids=None, inputs_embeds=None, inference_params=None, attention_mask=None, **mixer_kwargs):
         if inputs_embeds is not None:
             hidden_states = inputs_embeds
         elif input_ids is not None:
@@ -48,6 +48,14 @@ def patch_mixer_forward_to_accept_embeddings(model):
             hidden_states, residual = layer(
                 hidden_states, residual, inference_params=inference_params, **mixer_kwargs
             )
+        
+        # hiddens: (batch_size, seq_len, d_model)
+        # attention_mask: (batch_size, seq_len) -- 1 for real tokens, 0 for padding
+        mask = attention_mask.unsqueeze(-1)  # (batch_size, seq_len, 1)
+
+        # Add attention mask
+        hidden_states = hidden_states * mask
+
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
             hidden_states = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
@@ -117,9 +125,9 @@ class BiMambaForMaskedLM(PreTrainedModel):
             input_ids = input_ids.long()
             inputs_embeds = self.token_embedding(input_ids)
 
-        hid_fwd = self.mamba_forward.backbone(inputs_embeds=inputs_embeds)
+        hid_fwd = self.mamba_forward.backbone(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
         rev_emb = torch.flip(inputs_embeds, dims=[1])
-        hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb)
+        hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb, attention_mask=attention_mask)
         hid_bwd = torch.flip(hid_bwd, dims=[1])
 
         combined = torch.cat([hid_fwd, hid_bwd], dim=-1)
