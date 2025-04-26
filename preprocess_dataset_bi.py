@@ -58,29 +58,17 @@ from itertools import islice
 # Load and clean eccDNA sequences
 
 csv.field_size_limit(sys.maxsize)
-csv_file_1 = "dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens_new_clean.csv"
+csv_file_1 = "dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens.csv"
 csv_file_2 = "dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens_clean.csv"
 sequences = []
 
 with open(csv_file_1, newline='', encoding="utf-8") as f:
-    reader = csv.DictReader(f, delimiter="\t")
-    for row in tqdm(reader, desc="Reading sequences"):
-        seq = row.get("sequence")
+    reader = csv.DictReader(f)
+    for row in tqdm(islice(reader, 10000), desc="Reading sequences"):
+        seq = row.get("Sequence")
         if seq and len(seq) < 10000 and "N" not in seq:
             sequences.append(seq.upper())
 print(f"Loaded {len(sequences)} valid eccDNA sequences")
-
-
-
-with open(csv_file_2, newline='', encoding="utf-8") as f:
-    reader = csv.DictReader(f)
-    for row in tqdm(reader, desc="Reading sequences"):
-        seq = row.get("Sequence")
-        if seq and len(seq) < 100000 and "N" not in seq:
-            sequences.append(seq.upper())
-print(f"Loaded {len(sequences)} valid eccDNA sequences")
-
-
 
 # Save sequences to a text file
 os.makedirs("tmp", exist_ok=True)
@@ -116,16 +104,30 @@ fast_tokenizer = PreTrainedTokenizerFast(tokenizer_file=f"{tokenizer_path}/token
 fast_tokenizer.add_special_tokens({
     "unk_token": "[UNK]",
     "pad_token": "[PAD]",
-    "bos_token": "[CLS]",
+    "cls_token": "[CLS]",
     "eos_token": "[EOS]",
     "mask_token": "[MASK]",
 })
 
 # Encoding function for noncausal language modeling
 def encode_batch(batch):
+    eos_token_id = fast_tokenizer.eos_token_id
     encodings = fast_tokenizer(batch["text"], add_special_tokens=False, truncation=False)
-    input_ids = [[fast_tokenizer.convert_tokens_to_ids("[CLS]")] + ids for ids in encodings["input_ids"]]
-    return {"input_ids": input_ids}
+    input_ids_list = []
+    
+    for ids in encodings["input_ids"]:
+        cls = [fast_tokenizer.cls_token_id]
+        eos = [fast_tokenizer.eos_token_id]
+        
+        # Take first 256 tokens (or as many as available)
+        head_len = min(256, len(ids))
+        head = ids[:head_len]
+        
+        # Augment: original + head
+        augmented_ids = cls + ids + head + eos
+        input_ids_list.append(augmented_ids)
+
+    return {"input_ids": input_ids_list}
 
 # Build HuggingFace Dataset and apply the tokenizer
 raw_dataset = Dataset.from_dict({"text": sequences})
@@ -141,10 +143,11 @@ data_collator = DataCollatorForLanguageModeling(
     
 # Load bidirectional Mamba
 def load_mamba(vocab_size):
-    config = AutoConfig.from_pretrained("state-spaces/mamba-130m")
+    config = AutoConfig.from_pretrained("state-spaces/mamba2-130m")
     config.vocab_size = vocab_size
     config.pad_token_id = 0
-    
+    config.tie_embeddings = False
+
     model = BiMambaForMaskedLM(config)
 
     return model
@@ -175,6 +178,3 @@ trainer = Trainer(
 # Save model
 trainer.save_model("saved_model/")
 trainer.save_state()              
-
-
-
