@@ -41,6 +41,7 @@ tokenizer.eos_token = "[EOS]"
 config = AutoConfig.from_pretrained("state-spaces/mamba2-130m")
 config.vocab_size = tokenizer.vocab_size
 config.pad_token_id = 0
+config.tie_embeddings = False
 
 # Reconstruct training arguments
 model = BiMambaForMaskedLM(config)
