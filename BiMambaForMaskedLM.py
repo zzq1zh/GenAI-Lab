@@ -44,17 +44,19 @@ def patch_mixer_forward_to_accept_embeddings(model):
             raise ValueError("You must provide either input_ids or inputs_embeds.")
 
         residual = None
-        for layer in self.layers:
-            hidden_states, residual = layer(
-                hidden_states, residual, inference_params=inference_params, **mixer_kwargs
-            )
-        
+
         # hiddens: (batch_size, seq_len, d_model)
         # attention_mask: (batch_size, seq_len) -- 1 for real tokens, 0 for padding
         mask = attention_mask.unsqueeze(-1)  # (batch_size, seq_len, 1)
 
-        # Add attention mask
-        hidden_states = hidden_states * mask
+        for layer in self.layers:
+            hidden_states, residual = layer(
+                hidden_states, residual, inference_params=inference_params, **mixer_kwargs
+            )
+
+            # Add attention mask
+            hidden_states = hidden_states * mask
+            residual = residual * mask
 
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
@@ -127,7 +129,8 @@ class BiMambaForMaskedLM(PreTrainedModel):
 
         hid_fwd = self.mamba_forward.backbone(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
         rev_emb = torch.flip(inputs_embeds, dims=[1])
-        hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb, attention_mask=attention_mask)
+        rev_mask = torch.flip(attention_mask, dims=[1])
+        hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb, attention_mask=rev_mask)
         hid_bwd = torch.flip(hid_bwd, dims=[1])
 
         combined = torch.cat([hid_fwd, hid_bwd], dim=-1)
