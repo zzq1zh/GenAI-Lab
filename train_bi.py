@@ -35,7 +35,7 @@ tokenizer = PreTrainedTokenizerFast(tokenizer_file="saved_model/tokenizer.json")
 tokenizer.pad_token = "[PAD]"
 tokenizer.unk_token = "[UNK]"
 tokenizer.mask_token = "[MASK]"
-tokenizer.bos_token = "[BOS]"
+tokenizer.cls_token = "[CLS]"
 tokenizer.eos_token = "[EOS]"
 
 config = AutoConfig.from_pretrained("state-spaces/mamba-130m")
