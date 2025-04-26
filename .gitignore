@@ -1,5 +1,8 @@
-datasets/
+dataset/
 saved_model/
 tokenized_dataset/
 weights/
 backup/
+dataset.zip
+logs/
+tmp/

@@ -24,8 +24,21 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 # Load and clean eccDNA sequences
 csv.field_size_limit(sys.maxsize)
-csv_file = "datasets/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens.csv"
+csv_file = "/users/zliu328/GenAI-Lab/dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens_clean.csv"
 sequences = []
+
+def find_and_print_nulls(path, max_reports=10):
+    with open(path, 'rb') as f:
+        for i, chunk in enumerate(f):
+            if b'\x00' in chunk:
+                print(f"NUL byte found on line {i+1}: {chunk!r}")
+                max_reports -= 1
+                if max_reports <= 0:
+                    break
+
+# Path to your CSV
+find_and_print_nulls(csv_file)
+
 
 with open(csv_file, newline='', encoding="utf-8") as f:
     reader = csv.DictReader(f)

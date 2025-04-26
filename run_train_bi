@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH --job-name=bimamba
+#SBATCH --partition=gpu-he
+#SBATCH --gres=gpu:l40s:4              # Use 2 L40S GPUs
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=2            # One task per GPU
+#SBATCH --cpus-per-task=6              # 6 CPUs per GPU
+#SBATCH --mem=256G       # ✅ NEW LINE: use all memory allowed
+#SBATCH --time=12:00:00
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=zliu328@brown.edu
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+
+# Load environment
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate cycloMamba
+
+# CPU and memory tuning
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+# Memory and DDP diagnostics
+export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:64"
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export CUDA_LAUNCH_BLOCKING=1
+
+# Create log folder if needed
+mkdir -p logs
+
+# Print environment info
+echo "=== 2-GPU BiMamba Test ==="
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node: $SLURM_NODELIST"
+echo "CPUs per task: $SLURM_CPUS_PER_TASK"
+nproc
+nvidia-smi
+which python
+python --version
+date
+echo "==========================="
+
+# Set DDP master info
+export MASTER_ADDR=localhost
+export MASTER_PORT=12345
+
+# Launch distributed training
+python -m torch.distributed.run \
+  --nproc_per_node=2 \
+  train_bi.py

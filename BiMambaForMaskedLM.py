@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from transformers import PreTrainedModel, AutoConfig
+from transformers.modeling_outputs import MaskedLMOutput   
 from mamba_ssm.modules.mamba_simple import Mamba
 from mamba_ssm.models.mixer_seq_simple import MambaLMHeadModel
 from mamba_ssm.models.config_mamba import MambaConfig
+from mamba_ssm.ops.selective_scan_interface import selective_scan_fn, mamba_inner_fn
 try:
     from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn
 except ImportError:
@@ -80,8 +83,8 @@ def inject_circular_convolution(mamba_model: torch.nn.Module):
             Replaces the causal convolution in the Mamba layer with circular convolution.
             All other logic remains unchanged. This only affects the non-fast-path forward.
             """
-            if self.use_fast_path or inference_params is not None:
-                return original_forward(hidden_states, inference_params)
+            # if self.use_fast_path or inference_params is not None:
+            #     return original_forward(hidden_states, inference_params)
 
             batch, seqlen, dim = hidden_states.shape
 
@@ -108,7 +111,7 @@ def inject_circular_convolution(mamba_model: torch.nn.Module):
             C = rearrange(C, "(b l) d -> b d l", l=seqlen).contiguous()
 
             A = -torch.exp(self.A_log.float())
-            y = self.selective_scan(
+            y = selective_scan_fn(
                 x, dt, A, B, C, self.D.float(), z=z,
                 delta_bias=self.dt_proj.bias.float(),
                 delta_softplus=True,
@@ -123,55 +126,79 @@ def inject_circular_convolution(mamba_model: torch.nn.Module):
     for block in mamba_model.backbone.layers:
         patch_mamba_layer(block.mixer)
 
-class BiMambaForMaskedLM(nn.Module):
+
+
+class BiMambaForMaskedLM(PreTrainedModel):
+    config_class    = AutoConfig
+    base_model_prefix = "bimamba"
+
     def __init__(self, config):
-        super().__init__()
-        self.config = config
-        mamba_config = convert_hf_config_to_mamba(config)
-        print(mamba_config)
+        super().__init__(config)                    # <-- HF init
+        mamba_cfg = convert_hf_config_to_mamba(config)
 
+        # your embedding + two Mamba directions + proj
         self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
-        self.mamba_forward = MambaLMHeadModel(mamba_config)
-        self.mamba_backward = MambaLMHeadModel(mamba_config)
+        self.mamba_forward   = MambaLMHeadModel(mamba_cfg)
+        self.mamba_backward  = MambaLMHeadModel(mamba_cfg)
+        self.lm_head_proj    = nn.Linear(config.d_model * 2, config.d_model, bias=False)
 
-        # Tied embedding logic
-        self.lm_head_proj = nn.Linear(config.d_model * 2, config.d_model, bias=False)
-
-        # Inject circular convolution kernels into both directions
+        # your custom patches (circular conv, accept_embeds…)
         patch_mixer_forward_to_accept_embeddings(self.mamba_forward)
         patch_mixer_forward_to_accept_embeddings(self.mamba_backward)
         inject_circular_convolution(self.mamba_forward)
         inject_circular_convolution(self.mamba_backward)
 
-    def forward(self, input_ids, attention_mask=None, labels=None):
-        # Embed input
-        input_ids = input_ids.long()
-        inputs_embeds = self.token_embedding(input_ids)
+        # self.post_init()  # wires up HF weight-tying & save/load
 
-        # Forward hidden
-        hidden_forward = self.mamba_forward.backbone(inputs_embeds=inputs_embeds)
+    #### Added:
+    def get_input_embeddings(self):
+        return self.token_embedding
 
-        # Backward hidden
-        reversed_embeds = torch.flip(inputs_embeds, dims=[1])
-        hidden_backward = self.mamba_backward.backbone(inputs_embeds=reversed_embeds)
-        hidden_backward = torch.flip(hidden_backward, dims=[1])
+    def set_input_embeddings(self, new_emb):
+        self.token_embedding = new_emb
 
-        # Concat hidden
-        combined_output = torch.cat([hidden_forward, hidden_backward], dim=-1)
+    def get_output_embeddings(self):
+        return self.lm_head_proj
 
-        # Project to vocab logits via tied weight
-        projected = self.lm_head_proj(combined_output)
-        logits = F.linear(projected, self.token_embedding.weight)
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        for backbone in (self.mamba_forward.backbone,
+                         self.mamba_backward.backbone):
+            for block in backbone.layers:
+                block.gradient_checkpointing = True
 
-        # Optional loss
+    def forward(
+        self,
+        input_ids=None,
+        inputs_embeds=None,
+        attention_mask=None,
+        labels=None,
+        return_dict=True,
+    ):
+        # exactly your custom logic…
+        if inputs_embeds is None:
+            input_ids = input_ids.long()
+            inputs_embeds = self.token_embedding(input_ids)
+
+        hid_fwd = self.mamba_forward.backbone(inputs_embeds=inputs_embeds)
+        rev_emb = torch.flip(inputs_embeds, dims=[1])
+        hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb)
+        hid_bwd = torch.flip(hid_bwd, dims=[1])
+
+        combined = torch.cat([hid_fwd, hid_bwd], dim=-1)
+        projected = self.lm_head_proj(combined)
+        logits    = F.linear(projected, self.token_embedding.weight)
+
         loss = None
         if labels is not None:
-            pad_token_id = -100
-            loss_fn = nn.CrossEntropyLoss(ignore_index=pad_token_id)
-            loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+            loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
+            loss    = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
 
-        return {
-            "loss": loss,
-            "logits": logits,
-            "hidden_states": combined_output
-        }
+        if not return_dict:
+            out = (logits, combined)
+            return (loss,) + out if loss is not None else out
+
+        return MaskedLMOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=combined,
+        )
