@@ -48,11 +48,11 @@ def patch_mixer_forward_to_accept_embeddings(model):
             hidden_states, residual = layer(
                 hidden_states, residual, inference_params=inference_params, **mixer_kwargs
             )
-
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
             hidden_states = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
         else:
+            # Set prenorm=False here since we don't need the residual
             hidden_states = layer_norm_fn(
                 hidden_states,
                 self.norm_f.weight,
@@ -61,72 +61,12 @@ def patch_mixer_forward_to_accept_embeddings(model):
                 residual=residual,
                 prenorm=False,
                 residual_in_fp32=self.residual_in_fp32,
-                is_rms_norm=isinstance(self.norm_f, RMSNorm),
+                is_rms_norm=isinstance(self.norm_f, RMSNorm)
             )
-
         return hidden_states
 
     # Bind the new forward method to the instance
     model.backbone.forward = new_forward.__get__(model.backbone, model.backbone.__class__)
-
-def inject_circular_convolution(mamba_model: torch.nn.Module):
-    """
-    This function injects circular convolution into the Mamba layers of a MambaLMHeadModel.
-    It replaces the default causal convolution with circular padding.
-    """
-
-    def patch_mamba_layer(mamba_layer: Mamba):
-        original_forward = mamba_layer.forward
-
-        def circular_forward(self, hidden_states, inference_params=None):
-            """
-            Replaces the causal convolution in the Mamba layer with circular convolution.
-            All other logic remains unchanged. This only affects the non-fast-path forward.
-            """
-            # if self.use_fast_path or inference_params is not None:
-            #     return original_forward(hidden_states, inference_params)
-
-            batch, seqlen, dim = hidden_states.shape
-
-            xz = rearrange(
-                self.in_proj.weight @ rearrange(hidden_states, "b l d -> d (b l)"),
-                "d (b l) -> b d l",
-                l=seqlen,
-            )
-            if self.in_proj.bias is not None:
-                xz = xz + rearrange(self.in_proj.bias.to(dtype=xz.dtype), "d -> d 1")
-
-            x, z = xz.chunk(2, dim=1)
-
-            # Apply circular padding before convolution
-            x = F.pad(x, (self.d_conv - 1, 0), mode="circular")
-            x = self.act(self.conv1d(x)[..., :seqlen])
-
-            # Continue with the rest of the Mamba state-space computation
-            x_dbl = self.x_proj(rearrange(x, "b d l -> (b l) d"))
-            dt, B, C = torch.split(x_dbl, [self.dt_rank, self.d_state, self.d_state], dim=-1)
-            dt = self.dt_proj.weight @ dt.t()
-            dt = rearrange(dt, "d (b l) -> b d l", l=seqlen)
-            B = rearrange(B, "(b l) d -> b d l", l=seqlen).contiguous()
-            C = rearrange(C, "(b l) d -> b d l", l=seqlen).contiguous()
-
-            A = -torch.exp(self.A_log.float())
-            y = selective_scan_fn(
-                x, dt, A, B, C, self.D.float(), z=z,
-                delta_bias=self.dt_proj.bias.float(),
-                delta_softplus=True,
-            )
-            y = rearrange(y, "b d l -> b l d")
-            return self.out_proj(y)
-
-        # Patch the forward function of the Mamba instance
-        mamba_layer.forward = circular_forward.__get__(mamba_layer, Mamba)
-
-    # Iterate through Mamba blocks in the backbone model and apply patch
-    for block in mamba_model.backbone.layers:
-        patch_mamba_layer(block.mixer)
-
-
 
 class BiMambaForMaskedLM(PreTrainedModel):
     config_class    = AutoConfig
