@@ -146,7 +146,8 @@ training_args = TrainingArguments(
     report_to="wandb",  # Enable WandB logging
     run_name="bimamba-4gpu",           # Same as before
     gradient_checkpointing=False,      # Off to avoid extra memory usage
-    ddp_find_unused_parameters=True
+    ddp_find_unused_parameters=True,
+    max_grad_norm=1.0 
 )
 
 tokenized_dataset = load_from_disk("tokenized_dataset/")
