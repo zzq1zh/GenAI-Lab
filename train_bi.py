@@ -129,12 +129,6 @@ class SpanMaskingCollator:
         labels.append(self.tokenizer.eos_token_id)
 
         return new_input_ids, labels
-        
-data_collator = SpanMaskingCollator(
-    tokenizer=tokenizer,
-    noise_density=0.15,
-    mean_span_length=3
-) 
 
 # print("=== CUDA & Precision Check ===")
 # print(f"CUDA Available: {torch.cuda.is_available()}")
@@ -168,10 +162,10 @@ training_args = TrainingArguments(
 )
 
 tokenized_dataset = load_from_disk("tokenized_dataset/")
-data_collator = DataCollatorForLanguageModeling(
+data_collator = SpanMaskingCollator(
     tokenizer=tokenizer,
-    mlm=True,
-    mlm_probability=0.15
+    noise_density=0.15,
+    mean_span_length=3
 )
 
 # ── Trainer ───────────────────────────────────────────────────────────────────
