@@ -51,7 +51,7 @@ with open(seq_file, "w", encoding="utf-8") as f:
         f.write(seq + "\n")
 
 # Special tokens to match original setup
-special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[EOS]", "[MASK]"] + [f"<extra_id_{i}>" for i in range(100)]
+special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[MASK]"]
                  
 
 # Path to save the tokenizer
@@ -79,27 +79,23 @@ fast_tokenizer.add_special_tokens({
     "unk_token": "[UNK]",
     "pad_token": "[PAD]",
     "cls_token": "[CLS]",
-    "eos_token": "[EOS]",
     "mask_token": "[MASK]",
-    "additional_special_tokens": [f"<extra_id_{i}>" for i in range(100)]
 })
 
 # Encoding function for noncausal language modeling
 def encode_batch(batch):
-    eos_token_id = fast_tokenizer.eos_token_id
     encodings = fast_tokenizer(batch["text"], add_special_tokens=False, truncation=False)
     input_ids_list = []
     
     for ids in encodings["input_ids"]:
         cls = [fast_tokenizer.cls_token_id]
-        eos = [fast_tokenizer.eos_token_id]
         
         # Take first 256 tokens (or as many as available)
         head_len = min(256, len(ids))
         head = ids[:head_len]
         
         # Augment: original + head
-        augmented_ids = cls + ids + head + eos
+        augmented_ids = cls + ids + head
         input_ids_list.append(augmented_ids)
 
     return {"input_ids": input_ids_list}
