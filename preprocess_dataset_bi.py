@@ -31,13 +31,22 @@ import random
 # Load and clean eccDNA sequences
 
 csv.field_size_limit(sys.maxsize)
-csv_file_1 = "dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens.csv"
+csv_file_1 = "/users/zliu328/GenAI-Lab/dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens_new_clean.csv"
 csv_file_2 = "dataset/preprocess/eccDNA_Atlas/Homo_sapiens/Homo_sapiens_clean.csv"
 sequences = []
 
 with open(csv_file_1, newline='', encoding="utf-8") as f:
+    reader = csv.DictReader(f, delimiter="\t")
+    for row in tqdm(reader, desc="Reading sequences"):
+        seq = row.get("sequence")
+        if seq and len(seq) < 10000 and "N" not in seq:
+            sequences.append(seq.upper())
+print(f"Loaded {len(sequences)} valid eccDNA sequences")
+
+
+with open(csv_file_2, newline='', encoding="utf-8") as f:
     reader = csv.DictReader(f)
-    for row in tqdm(islice(reader, 10000), desc="Reading sequences"):
+    for row in tqdm(reader, desc="Reading sequences"):
         seq = row.get("Sequence")
         if seq and len(seq) < 10000 and "N" not in seq:
             sequences.append(seq.upper())

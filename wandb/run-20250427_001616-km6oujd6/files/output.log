@@ -1,0 +1,59 @@
+
+
+
+  0%|          | 2/9285 [01:57<126:53:08, 49.21s/it] Traceback (most recent call last):
+  File "/oscar/home/zliu328/GenAI-Lab/train_bi.py", line 163, in <module>
+    trainer.train()
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/transformers/trainer.py", line 2245, in train
+    return inner_training_loop(
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/transformers/trainer.py", line 2560, in _inner_training_loop
+    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/transformers/trainer.py", line 3736, in training_step
+    loss = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/transformers/trainer.py", line 3801, in compute_loss
+    outputs = model(**inputs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/parallel/distributed.py", line 1519, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/parallel/distributed.py", line 1355, in _run_ddp_forward
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/accelerate/utils/operations.py", line 814, in forward
+    return model_forward(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/accelerate/utils/operations.py", line 802, in __call__
+    return convert_to_fp32(self.model_forward(*args, **kwargs))
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/amp/autocast_mode.py", line 16, in decorate_autocast
+    return func(*args, **kwargs)
+  File "/oscar/home/zliu328/GenAI-Lab/BiMambaForMaskedLM.py", line 133, in forward
+    hid_bwd = self.mamba_backward.backbone(inputs_embeds=rev_emb, attention_mask=rev_mask)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/oscar/home/zliu328/GenAI-Lab/BiMambaForMaskedLM.py", line 53, in new_forward
+    hidden_states, residual = layer(
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/mamba_ssm/modules/block.py", line 86, in forward
+    hidden_states = self.mlp(hidden_states)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/mamba_ssm/modules/mlp.py", line 30, in forward
+    y = self.fc1(x)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/zliu328/miniconda3/envs/genai/lib/python3.9/site-packages/torch/nn/modules/linear.py", line 114, in forward
+    return F.linear(input, self.weight, self.bias)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 186.00 MiB. GPU 0 has a total capacty of 44.53 GiB of which 132.69 MiB is free. Process 3617482 has 424.00 MiB memory in use. Process 3617481 has 424.00 MiB memory in use. Including non-PyTorch memory, this process has 43.11 GiB memory in use. Process 3617480 has 424.00 MiB memory in use. Of the allocated memory 41.42 GiB is allocated by PyTorch, and 264.12 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

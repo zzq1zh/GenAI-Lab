@@ -24,13 +24,13 @@ from transformers import AutoConfig, Trainer, TrainingArguments, DataCollatorFor
 from safetensors.torch import load_file as load_safetensors
 from BiMambaForMaskedLM import BiMambaForMaskedLM
 
-# import wandb
-# from transformers.integrations import WandbCallback
-# wandb.init(project="eccDNA-bimamba", name="bimamba-4gpu")
+import wandb
+from transformers.integrations import WandbCallback
+wandb.init(project="EccDNA-Foundation-Model", name="Bimamba")
 
 
 # Load tokenizer
-tokenizer = PreTrainedTokenizerFast(tokenizer_file="saved_model/tokenizer.json")
+tokenizer = PreTrainedTokenizerFast(tokenizer_file="saved_model/bpe_tokenizer/tokenizer.json")
 
 tokenizer.pad_token = "[PAD]"
 tokenizer.unk_token = "[UNK]"
@@ -129,7 +129,7 @@ class SpanMaskingCollator:
 
 training_args = TrainingArguments(
     output_dir="./saved_model/",
-    per_device_train_batch_size=8,
+    per_device_train_batch_size=4,
     gradient_accumulation_steps=8,
     num_train_epochs=3,
     logging_steps=10,
@@ -138,7 +138,7 @@ training_args = TrainingArguments(
     fp16=False,
     bf16=True,
     remove_unused_columns=False,
-    report_to="none",                 # Enable WandB logging
+    report_to="wandb",                 # Enable WandB logging
     run_name="bimamba-4gpu",           # Same as before
     gradient_checkpointing=False,      # Off to avoid extra memory usage
     ddp_find_unused_parameters=True
