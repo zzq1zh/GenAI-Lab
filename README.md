@@ -14,4 +14,17 @@ A reproducible Python 3.9 environment using Conda and pip-based requirements.
 conda create -n cycloMamba python=3.9
 conda activate cycloMamba
 
+### 2. Install PyTorch 2.1.0 (CUDA 11.8)
+
+```bash
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
+
+### 3. Install nvcc via Conda
+
+```bash
+conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
+
+### 4. Install CycloMamba Dependencies
+
+```bash
 pip install -r requirements.txt
