@@ -12,6 +12,8 @@ os.environ["TORCH_DISTRIBUTED_DEBUG"] = "INFO"
 import sys
 import math
 import csv
+import random
+import numpy as np
 from tqdm import tqdm
 from itertools import islice
 from datasets import load_from_disk
@@ -34,8 +36,6 @@ tokenizer.pad_token = "[PAD]"
 tokenizer.unk_token = "[UNK]"
 tokenizer.mask_token = "[MASK]"
 tokenizer.cls_token = "[CLS]"
-tokenizer.eos_token = "[EOS]"
-tokenizer.additional_special_tokens = [f"<extra_id_{i}>" for i in range(100)]
 
 config = AutoConfig.from_pretrained("state-spaces/mamba2-130m")
 config.vocab_size = tokenizer.vocab_size
@@ -48,87 +48,70 @@ model.cuda()    # move to the default GPU
 
 # Data collator for span masking training
 class SpanMaskingCollator:
+    """
+    SpanBERT-style span masking collator.
+    """
     def __init__(self, tokenizer, noise_density=0.15, mean_span_length=3):
-        self.tokenizer = tokenizer
+        self.tok = tokenizer
         self.noise_density = noise_density
-        self.mean_span_length = mean_span_length
-
+        self.mean_span_len = mean_span_length
+        self.special_ids = {tokenizer.cls_token_id,
+                            tokenizer.pad_token_id}
+                            
     def __call__(self, examples):
-        batch = [self.mask_span(example["input_ids"]) for example in examples]
-        input_ids_list, labels_list = zip(*batch)
-
-        # Find the maximum length in this batch
-        max_input_length = max(len(ids) for ids in input_ids_list)
-        max_label_length = max(len(ids) for ids in labels_list)
-
-        # Pad input_ids and labels to the max length of the batch
-        input_ids = torch.stack([
-            self.pad_sequence(ids, max_input_length, pad_token_id=self.tokenizer.pad_token_id)
-            for ids in input_ids_list
-        ])
-        labels = torch.stack([
-            self.pad_sequence(ids, max_label_length, pad_token_id=-100)
-            for ids in labels_list
-        ])
-
-        # Attention mask: 1 for real tokens, 0 for padding
-        attention_mask = (input_ids != self.tokenizer.pad_token_id).long()
-
+        pairs = [self._mask_span(e["input_ids"]) for e in examples]
+        input_ids, labels = zip(*pairs)
+        max_len = max(map(len, input_ids))
+        input_ids = torch.stack([self._pad(seq, max_len, self.tok.pad_token_id) for seq in input_ids])
+        labels    = torch.stack([self._pad(seq, max_len, -100)                   for seq in labels])
         return {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "labels": labels
+            "input_ids":      input_ids,
+            "attention_mask": (input_ids != self.tok.pad_token_id).long(),
+            "labels":         labels,
         }
 
-    def pad_sequence(self, ids, max_length, pad_token_id):
-        padded = ids + [pad_token_id] * (max_length - len(ids))
-        return torch.tensor(padded, dtype=torch.long)
+    @staticmethod
+    def _pad(seq, max_len, pad_id):
+        return torch.tensor(seq + [pad_id] * (max_len - len(seq)), dtype=torch.long)
 
-    def mask_span(self, input_ids):
-        length = len(input_ids)
-        num_masked = max(1, int(round(length * self.noise_density)))
+    def _mask_span(self, ids):
+        ids = list(ids)
+        L = len(ids)
+        k = max(1, int(round(L * self.noise_density)))
 
-        # Randomly sample masked spans
-        mask_spans = []
-        i = 0
-        while i < num_masked:
-            span_length = min(random.poisson(lam=self.mean_span_length), num_masked - i)
-            start = random.randint(0, max(0, length - span_length))
-            mask_spans.append((start, start + span_length))
-            i += span_length
+        candidate = self._sample_spans(ids, L, k)
+        labels = [-100] * L
 
-        # Merge overlapping spans
-        mask_spans = sorted(mask_spans)
-        merged_spans = []
-        for start, end in mask_spans:
-            if not merged_spans or start > merged_spans[-1][1]:
-                merged_spans.append([start, end])
-            else:
-                merged_spans[-1][1] = max(merged_spans[-1][1], end)
+        for span in candidate:
+            for pos in range(*span):
+                labels[pos] = ids[pos]
+                p = random.random()
+                if p < 0.8:
+                    ids[pos] = self.tok.mask_token_id
+                elif p < 0.9:
+                    ids[pos] = random.randint(0, self.tok.vocab_size - 1)
+                # else: keep original
 
-        # Build new input_ids and labels
-        new_input_ids = []
-        labels = []
-        extra_id = 0
-        prev_end = 0
-        for start, end in merged_spans:
-            # Copy unmasked part
-            new_input_ids.extend(input_ids[prev_end:start])
-            # Insert <extra_id_X>
-            new_input_ids.append(self.tokenizer.convert_tokens_to_ids(f"<extra_id_{extra_id}>"))
+        return ids, labels
 
-            # Label: <extra_id_X> + masked content
-            labels.append(self.tokenizer.convert_tokens_to_ids(f"<extra_id_{extra_id}>"))
-            labels.extend(input_ids[start:end])
+    def _sample_spans(self, ids, L, k):
+        spans, covered = [], 0
+        while covered < k:
+            span_len = max(1, np.random.poisson(self.mean_span_len))
+            if span_len > L:
+                span_len = L
+            start = random.randint(0, L - span_len) if L - span_len > 0 else 0
 
-            extra_id += 1
-            prev_end = end
+            if any(ids[s] in self.special_ids for s in range(start, start + span_len)):
+                continue
+            if any(not (end <= start or start + span_len <= st) for st, end in spans):
+                continue
 
-        # Copy the remaining part
-        new_input_ids.extend(input_ids[prev_end:])
-        labels.append(self.tokenizer.eos_token_id)
+            spans.append((start, start + span_len))
+            covered += span_len
 
-        return new_input_ids, labels
+        spans.sort()
+        return spans
 
 # print("=== CUDA & Precision Check ===")
 # print(f"CUDA Available: {torch.cuda.is_available()}")
