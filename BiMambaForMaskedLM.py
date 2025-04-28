@@ -149,5 +149,5 @@ class BiMambaForMaskedLM(PreTrainedModel):
         return MaskedLMOutput(
             loss=loss,
             logits=logits,
-            hidden_states=combined,
+            hidden_states=projected,
         )
