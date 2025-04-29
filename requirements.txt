@@ -98,7 +98,7 @@ learn2learn==0.2.0
 libclang==18.1.1
 llvmlite==0.43.0
 lxml==5.2.0
-mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.2.4/mamba_ssm-2.2.4+cu11torch2.1cxx11abiFALSE-cp39-cp39-linux_x86_64.whl#sha256=f3ddae9c4ddee97a8f299c6bdc8172b0d67ea2ffabcfda8a9ac4c9b6e5587f51
+mamba-ssm==2.2.4
 Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
