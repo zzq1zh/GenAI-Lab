@@ -1,3 +1,8 @@
+import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 from src.download_datasets import download_datasets
 from src.extract_sequences import extract_sequences
 from src.tokenize_sequences import tokenize_sequences
