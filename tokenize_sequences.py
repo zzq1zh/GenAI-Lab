@@ -1,5 +1,9 @@
 from collections.abc import Sequence
 import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 import pandas as pd
 import itertools
 from collections import Counter
@@ -36,8 +40,10 @@ def tokenize_sequences():
       "data/preprocessed/eccDNA_Atlas"
   ]
   
+  os.makedirs("tmp/", exist_ok=True)
+
   target_files = {"Homo_sapiens.txt", "Gallus_gallus.txt", "Mus_musculus.txt"}
-  seq_file = "sequences.txt"
+  seq_file = "tmp/sequences.txt"
   sequence_set = set()
   
   # Merge datasets
