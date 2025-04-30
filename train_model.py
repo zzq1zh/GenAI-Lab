@@ -15,7 +15,7 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from transformers import AutoConfig, Trainer, TrainingArguments, DataCollatorForLanguageModeling, PreTrainedTokenizerFast
 from safetensors.torch import load_file as load_safetensors
-from BiMambaForMaskedLM import BiMambaForMaskedLM
+from src.BiMambaForMaskedLM import BiMambaForMaskedLM
 
 import wandb
 from transformers.integrations import WandbCallback
