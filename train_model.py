@@ -64,25 +64,26 @@ def train_model():
         def __call__(self, examples):
             pairs = [self._mask_span(e["input_ids"]) for e in examples]
             input_ids, labels = zip(*pairs)
-            max_len = max(map(len, input_ids))
 
             input_ids = [self.append_head_to_tail(seq, copy_len=256) for seq in input_ids]
             labels    = [self.append_head_to_tail(seq, copy_len=256) for seq in labels]
 
+            max_len = max(map(len, input_ids))
+
             # pad
             input_ids = torch.stack([self._pad(seq, max_len, self.tok.pad_token_id) for seq in input_ids])
             labels    = torch.stack([self._pad(seq, max_len, -100) for seq in labels])
-
+            
             return {
                 "input_ids":      input_ids,
                 "attention_mask": (input_ids != self.tok.pad_token_id).long(),
                 "labels":         labels,
             }
     
-        def _pad(seq, max_len, pad_id):
+        def _pad(self, seq, max_len, pad_id):
             return torch.tensor(seq + [pad_id] * (max_len - len(seq)), dtype=torch.long)
     
-        def append_head_to_tail(seq, copy_len=256):
+        def append_head_to_tail(self, seq, copy_len=256):
             copy_len = min(len(seq), copy_len)
             return seq + seq[:copy_len]
 
