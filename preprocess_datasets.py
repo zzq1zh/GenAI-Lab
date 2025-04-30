@@ -45,7 +45,7 @@ def preprocess_datasets():
     
           print(f"Sequence file saved as: {output_file}")
     
-      # Apply function for different species/genomes
+      # Extract sequences
       extract_sequences(Homo_sapiens_input, Homo_sapiens_output, hg19_genome)
       extract_sequences(Gallus_gallus_input, Gallus_gallus_output, galGal4_genome)
       extract_sequences(Mus_musculus_input, Mus_musculus_output, mm10_genome)
@@ -84,10 +84,10 @@ def preprocess_datasets():
     
           print(f"Sequence file saved as: {output_file}")
     
-      # Apply function for different species/genomes
+      # Extract sequences
       extract_sequences(Homo_sapiens_input, Homo_sapiens_output, hg19_genome)
     
-    # Extract sequences
+    # Extract sequences from datasets
     extract_sequences_from_eccDNA_Atlas()
     extract_sequences_from_CircleBase()
 
