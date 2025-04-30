@@ -56,9 +56,8 @@ def tokenize_datasets():
   # Special tokens to match original setup
   special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[MASK]"]
                    
-  
   # Path to save the tokenizer
-  tokenizer_path = "saved_model/bpe_tokenizer"
+  tokenizer_path = "saved_model/"
   vocab_size = 4096
   
   # Initialize tokenizer and training configuration
