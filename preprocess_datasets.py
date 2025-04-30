@@ -1,6 +1,7 @@
 from pyfaidx import Fasta
 import csv
 import os
+from tqdm import tqdm
 
 def extract_sequences_from_eccDNA_Atlas():
   # Load reference genomes
@@ -27,7 +28,7 @@ def extract_sequences_from_eccDNA_Atlas():
 
           reader = csv.DictReader(infile, delimiter='\t')
 
-          for row in reader:
+          for row in tqdm(reader, desc=f"Extracting {input_file}"):
               try:
                   chrom = row['Chr']  # Extract chromosome name
                   eccDNA_type = row['eccDNA type']
@@ -43,7 +44,7 @@ def extract_sequences_from_eccDNA_Atlas():
 
       print(f"Sequence file saved as: {output_file}")
 
- # Extract sequences
+  # Apply function for different species/genomes
   extract_sequences(Homo_sapiens_input, Homo_sapiens_output, hg19_genome)
   extract_sequences(Gallus_gallus_input, Gallus_gallus_output, galGal4_genome)
   extract_sequences(Mus_musculus_input, Mus_musculus_output, mm10_genome)
@@ -67,11 +68,11 @@ def extract_sequences_from_CircleBase():
 
           reader = csv.DictReader(infile, delimiter='\t')
 
-          for row in reader:
+          for row in tqdm(reader, desc=f"Extracting {input_file}"):
               try:
-                  chrom = row['chr']  # Extract chromosome name
-                  start = int(float(row['hg19_start'])) - 1  # Convert start position to integer (0-indexed)
-                  end = int(float(row['hg19_end']))  # Convert end position to integer
+                  chrom = row['chr_hg19']  # Extract chromosome name
+                  start = int(float(row['start_hg19'])) - 1  # Convert start position to integer (0-indexed)
+                  end = int(float(row['end_hg19']))  # Convert end position to integer
                   seq = genome[chrom][start:end].seq.upper()  # Extract sequence from genome file
                   if 'N' in seq or end - start > 10000:  # Skip sequences with 'N' (unknown bases) and sequences too long
                       continue
@@ -82,9 +83,9 @@ def extract_sequences_from_CircleBase():
 
       print(f"Sequence file saved as: {output_file}")
 
-  # Extract sequences
+  # Apply function for different species/genomes
   extract_sequences(Homo_sapiens_input, Homo_sapiens_output, hg19_genome)
 
-# Extract sequences from datasets
+# Extract sequences
 extract_sequences_from_eccDNA_Atlas()
 extract_sequences_from_CircleBase()
