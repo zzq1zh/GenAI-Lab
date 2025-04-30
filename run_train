@@ -47,4 +47,4 @@ export MASTER_PORT=12345
 # Launch distributed training
 python -m torch.distributed.run \
   --nproc_per_node=4 \
-  train.py
+  train_model.py
