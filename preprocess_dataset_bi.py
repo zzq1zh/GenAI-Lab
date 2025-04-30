@@ -91,25 +91,11 @@ fast_tokenizer.add_special_tokens({
     "mask_token": "[MASK]",
 })
 
-# Encoding function for noncausal language modeling
-def encode_batch(batch):
-    encodings = fast_tokenizer(batch["text"], add_special_tokens=False, truncation=False)
-    input_ids_list = []
-    
-    for ids in encodings["input_ids"]:
-        cls = [fast_tokenizer.cls_token_id]
-        
-        # Take first 256 tokens (or as many as available)
-        head_len = min(256, len(ids))
-        head = ids[:head_len]
-        
-        # Augment: original + head
-        augmented_ids = cls + ids + head
-        input_ids_list.append(augmented_ids)
-
-    return {"input_ids": input_ids_list}
-
 # Build HuggingFace Dataset and apply the tokenizer
 raw_dataset = Dataset.from_dict({"text": sequences})
-tokenized_dataset = raw_dataset.map(encode_batch, batched=True, remove_columns=["text"])
+tokenized_dataset = raw_dataset.map(
+    lambda batch: fast_tokenizer(batch["text"], add_special_tokens=True, truncation=False),
+    batched=True,
+    remove_columns=["text"]
+)
 tokenized_dataset.save_to_disk("tokenized_dataset/")
