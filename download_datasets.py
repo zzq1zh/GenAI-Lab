@@ -1,31 +1,57 @@
 import os
 import requests
 from tqdm import tqdm
+import gzip
+import shutil
 
-# EccDNA directory path
-target_path = os.path.join("dataset", "preprocess", "eccDNA_Atlas", "Homo_sapiens")
-os.makedirs(target_path, exist_ok=True)
+def download_genomes(url, dest_path):
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
-# File URL and output path
-csv_url = "https://drive.usercontent.google.com/download?id=1QrDjwfzg0L8M2eons97N0UPWJTnuB0jr&export=download&authuser=0&confirm=t&uuid=029b1ddb-2ffa-490d-96f8-0c815cc13a45&at=APcmpoxnXvkgKt4XilEMzmmjWEd9%3A1744124388589"
-csv_file_path = os.path.join(target_path, "Homo_sapiens.csv")
-
-# Stream download with tqdm progress bar
-try:
-    response = requests.get(csv_url, stream=True)
-    response.raise_for_status()
+    # Download the genomes
+    response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
-    block_size = 1024  # 1 Kibibyte
+    block_size = 1024  # 1 Kilobyte
 
-    with open(csv_file_path, 'wb') as file, tqdm(
-        total=total_size, unit='B', unit_scale=True, desc="Downloading",
-        ncols=80, ascii=True
-    ) as bar:
-        for chunk in response.iter_content(chunk_size=block_size):
-            if chunk:
-                file.write(chunk)
-                bar.update(len(chunk))
+    tqdm_bar = tqdm(total=total_size, unit='iB', unit_scale=True, desc=os.path.basename(dest_path))
+    
+    with open(dest_path, 'wb') as f:
+        for data in response.iter_content(block_size):
+            tqdm_bar.update(len(data))
+            f.write(data)
+    tqdm_bar.close()
 
-    print(f"File downloaded successfully: {csv_file_path}")
-except Exception as e:
-    print(f"Failed to download the file: {e}")
+    if total_size != 0 and tqdm_bar.n != total_size:
+        print("WARNING: Downloaded size does not match expected size.")
+
+def download_and_unzip(url, output_path):
+    gz_path = output_path + ".gz"
+    
+    download_with_progress(url, gz_path)
+
+    print(f"Unzipping {gz_path} ...")
+    with gzip.open(gz_path, 'rb') as f_in:
+        with open(output_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    
+    os.remove(gz_path)
+    print(f"Saved to {output_path}")
+
+# Set download directory
+download_dir = "data/genomes"
+os.makedirs(download_dir, exist_ok=True)
+
+# Download and unzip genomes
+download_and_unzip(
+    "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz", 
+    os.path.join(download_dir, "hg19.fa")
+)
+
+download_and_unzip(
+    "http://hgdownload.cse.ucsc.edu/goldenPath/galGal4/bigZips/galGal4.fa.gz", 
+    os.path.join(download_dir, "galGal4.fa")
+)
+
+download_and_unzip(
+    "http://hgdownload.cse.ucsc.edu/goldenPath/mm10/bigZips/mm10.fa.gz", 
+    os.path.join(download_dir, "mm10.fa")
+)
