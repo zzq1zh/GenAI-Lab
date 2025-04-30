@@ -36,7 +36,7 @@ date
 echo "==================================="
 
 # Run preprocessing
-python preprocess_dataset_bi.py
+python preprocess_dataset.py
 
 
 
