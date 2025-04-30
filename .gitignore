@@ -1,4 +1,4 @@
-data/
+data/*
 saved_model/
 tokenized_dataset/
 weights/
@@ -8,4 +8,5 @@ logs/
 tmp/
 __pycache__/
 
-!/data/raw
+!data/raw/
+!data/raw/**

@@ -7,6 +7,3 @@ download_datasets()
 
 # Extract sequences from datasets
 extract_sequences()
-
-# tokenize_datasets
-tokenize_sequences()
