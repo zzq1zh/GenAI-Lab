@@ -1,4 +1,4 @@
-dataset/
+data/
 saved_model/
 tokenized_dataset/
 weights/
@@ -6,3 +6,6 @@ backup/
 dataset.zip
 logs/
 tmp/
+__pycache__/
+
+!/data/raw
