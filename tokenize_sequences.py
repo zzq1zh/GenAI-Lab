@@ -32,6 +32,7 @@ from tqdm import tqdm
 import sys
 from itertools import islice
 import random
+from tokenizers.processors import TemplateProcessing
 
 def tokenize_sequences():
   # Load and clean eccDNA sequences
@@ -47,6 +48,10 @@ def tokenize_sequences():
   sequence_set = set()
   
   # Merge datasets
+  sequence_set = set()
+  count = 0
+  max_lines = 100
+
   with open(seq_file, "w", encoding="utf-8") as outfile:
       for path in paths:
           for filename in os.listdir(path):
@@ -54,13 +59,22 @@ def tokenize_sequences():
                   file_path = os.path.join(path, filename)
                   with open(file_path, "r", encoding="utf-8") as infile:
                       for line in tqdm(infile, desc=f"Merging {filename} from {path}"):
-                          sequence_set.add(line)
-                          outfile.write(line)
+                          if count >= max_lines:
+                              break
+                          line = line.strip()
+                          if line not in sequence_set:
+                              sequence_set.add(line)
+                              outfile.write(line + "\n")
+                              count += 1
+                  if count >= max_lines:
+                      break
+          if count >= max_lines:
+              break
   sequences = list(sequence_set)
   print(f"Merge complete. Total sequences: {len(sequences)}. Saved to: {seq_file}")
   
   # Special tokens to match original setup
-  special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[MASK]"]
+  special_tokens = ["[PAD]", "[CLS]", "[UNK]", "[MASK]"]
                    
   # Path to save the tokenizer
   tokenizer_path = "saved_model/"
@@ -81,16 +95,28 @@ def tokenize_sequences():
   os.makedirs(tokenizer_path, exist_ok=True)
   tokenizer.save(f"{tokenizer_path}/tokenizer.json")
   
-  # Wrap in HuggingFace's PreTrainedTokenizerFast
+  # Wrap in PreTrainedTokenizerFast
   fast_tokenizer = PreTrainedTokenizerFast(tokenizer_file=f"{tokenizer_path}/tokenizer.json")
   fast_tokenizer.add_special_tokens({
-      "unk_token": "[UNK]",
       "pad_token": "[PAD]",
       "cls_token": "[CLS]",
+      "unk_token": "[UNK]",
       "mask_token": "[MASK]",
   })
-  
-  # Build HuggingFace Dataset and apply the tokenizer
+
+
+  fast_tokenizer._tokenizer.post_processor = TemplateProcessing(
+      single="[CLS] $A",
+      special_tokens=[
+          ("[CLS]", fast_tokenizer.convert_tokens_to_ids("[CLS]")),
+      ]
+  )
+
+  # Save all HuggingFace tokenizer files
+  fast_tokenizer.save_pretrained(tokenizer_path)
+
+
+  # Build Dataset and apply the tokenizer
   raw_dataset = Dataset.from_dict({"text": sequences})
   tokenized_dataset = raw_dataset.map(
       lambda batch: fast_tokenizer(batch["text"], add_special_tokens=True, truncation=False),
