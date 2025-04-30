@@ -29,7 +29,7 @@ import sys
 from itertools import islice
 import random
 
-def tokenize_datasets():
+def tokenize_sequences():
   # Load and clean eccDNA sequences
   paths = [
       "data/preprocessed/CircleBase",
@@ -97,4 +97,4 @@ def tokenize_datasets():
   total_tokens = sum(len(x["input_ids"]) for x in tokenized_dataset)
   print(f"Total tokens: {total_tokens}")
 
-tokenize_datasets()
+tokenize_sequences()

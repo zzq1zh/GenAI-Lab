@@ -36,7 +36,7 @@ date
 echo "==================================="
 
 # Run preprocessing
-python tokenize_datasets.py
+python preprocess_datasets.py
 
 
 

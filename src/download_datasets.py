@@ -27,7 +27,7 @@ def download_datasets():
     def download_and_unzip(url, output_path):
         gz_path = output_path + ".gz"
         
-        download_with_progress(url, gz_path)
+        download_genomes(url, gz_path)
     
         print(f"Unzipping {gz_path} ...")
         with gzip.open(gz_path, 'rb') as f_in:
