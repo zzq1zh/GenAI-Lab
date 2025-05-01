@@ -61,7 +61,6 @@ def tokenize_sequences():
                           if line not in sequence_set:
                               sequence_set.add(line)
                               outfile.write(line + "\n")
-                              count += 1
 
   sequences = list(sequence_set)
   print(f"Merge complete. Total sequences: {len(sequences)}. Saved to: {seq_file}")
