@@ -45,7 +45,6 @@ def tokenize_sequences():
 
   target_files = {"Homo_sapiens.txt", "Gallus_gallus.txt", "Mus_musculus.txt"}
   seq_file = "tmp/sequences.txt"
-  sequence_set = set()
   
   # Merge datasets
   sequence_set = set()
