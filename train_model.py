@@ -33,7 +33,7 @@ def train_model():
     wandb.init(project="EccDNA-Foundation-Model", name="Bimamba")
     
     # Load tokenizer
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file="saved_model/tokenizer.json")
+    tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model/")
     
     tokenizer.pad_token = "[PAD]"
     tokenizer.unk_token = "[UNK]"
