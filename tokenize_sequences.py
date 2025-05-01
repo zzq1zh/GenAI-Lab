@@ -49,8 +49,6 @@ def tokenize_sequences():
   
   # Merge datasets
   sequence_set = set()
-  count = 0
-  max_lines = 100
 
   with open(seq_file, "w", encoding="utf-8") as outfile:
       for path in paths:
@@ -59,17 +57,12 @@ def tokenize_sequences():
                   file_path = os.path.join(path, filename)
                   with open(file_path, "r", encoding="utf-8") as infile:
                       for line in tqdm(infile, desc=f"Merging {filename} from {path}"):
-                          if count >= max_lines:
-                              break
                           line = line.strip()
                           if line not in sequence_set:
                               sequence_set.add(line)
                               outfile.write(line + "\n")
                               count += 1
-                  if count >= max_lines:
-                      break
-          if count >= max_lines:
-              break
+
   sequences = list(sequence_set)
   print(f"Merge complete. Total sequences: {len(sequences)}. Saved to: {seq_file}")
   
