@@ -84,12 +84,15 @@ def train_model():
             return torch.tensor(seq + [pad_id] * (max_len - len(seq)), dtype=torch.long)
     
         def append_head_to_tail(self, seq, copy_len=128):
-            copy_len = min(len(seq), copy_len)
-            return seq + seq[1:copy_len]
+            copy_len = min(len(seq) - 1, copy_len)
+            return seq + seq[1: 1 + copy_len]
 
         def _mask_span(self, ids):
             ids = list(ids)
             L = len(ids)
+            if L <= 2:
+                return ids, [-100] * L
+            
             k = max(1, int(round(L * self.noise_density)))
     
             candidate = self._sample_spans(ids, L, k)
@@ -107,10 +110,11 @@ def train_model():
     
             return ids, labels
     
-        def _sample_spans(self, ids, L, k):
+        def _sample_spans(self, ids, L, k, max_sampling_attempts=1000):
             spans, covered = [], 0
-            while covered < k:
-                span_len = max(1, np.random.poisson(self.mean_span_len))
+            while covered < k and attempts < max_sampling_attempts:
+                attempts += 1
+                span_len = max(1, int(np.random.poisson(self.mean_span_len)))
                 if span_len > L:
                     span_len = L
                 start = random.randint(0, L - span_len) if L - span_len > 0 else 0
@@ -122,7 +126,10 @@ def train_model():
     
                 spans.append((start, start + span_len))
                 covered += span_len
-    
+
+            if covered < k:
+                print(f"[WARN] span sampling stopped early: L={L}, needed={k}, got={covered}")
+
             spans.sort()
             return spans
     
