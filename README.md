@@ -11,8 +11,8 @@ A reproducible Python 3.9 environment using Conda and pip-based requirements.
 ### 1. Create the Conda environment with Python 3.9
 
 ```bash
-conda create -n cycloMamba python=3.9
-conda activate cycloMamba
+conda create -n eccDNAMamba python=3.9
+conda activate eccDNAMamba
 ```
 
 ### 2. Install PyTorch 2.1.0 with CUDA 11.8
