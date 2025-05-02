@@ -21,16 +21,16 @@ from transformers import AutoConfig, Trainer, TrainingArguments, DataCollatorFor
 from safetensors.torch import load_file as load_safetensors
 from BiMambaForMaskedLM import BiMambaForMaskedLM
 
-import wandb
+# import wandb
 from transformers.integrations import WandbCallback
 
 def train_model():
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-    os.environ["TORCH_DISTRIBUTED_DEBUG"] = "INFO"
+    # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    # os.environ["OMP_NUM_THREADS"] = "1"
+    # os.environ["MKL_NUM_THREADS"] = "1"
+    # os.environ["TORCH_DISTRIBUTED_DEBUG"] = "INFO"
     
-    wandb.init(project="EccDNA-Foundation-Model", name="Bimamba")
+    # wandb.init(project="EccDNA-Foundation-Model", name="Bimamba")
     
     # Load tokenizer
     tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model/")
@@ -156,7 +156,7 @@ def train_model():
         fp16=False,
         bf16=True,
         remove_unused_columns=False,
-        report_to="wandb",  # Enable WandB logging
+        report_to="none",  # Enable WandB logging
         run_name="bimamba-4gpu",           # Same as before
         gradient_checkpointing=False,      # Off to avoid extra memory usage
         ddp_find_unused_parameters=True,
