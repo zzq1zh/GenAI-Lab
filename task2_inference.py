@@ -2,6 +2,9 @@ import sys
 sys.path.append("./GenAI-Lab")
 
 import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 import csv
 import torch
 import math
@@ -32,15 +35,12 @@ hg19_genome = Fasta('data/genomes/hg19.fa')
 hg38_genome = Fasta('data/genomes/hg38.fa')
 
 # Load reference sequences
-random_regions_file = "data/raw/hg38/random_hg38.tsv"
-healthy_file = "data/raw/CircleBase/Healthy_person.tsv"
-cancer_file = "data/raw/CircleBase/Cancer_cell_line.tsv"
+Random_regions_input = "data/raw/hg38/random_hg38.tsv"
+Healthy_person_input = "data/raw/CircleBase/Healthy_person.tsv"
+Cancer_cell_line_input_input = "data/raw/CircleBase/Cancer_cell_line.tsv"
 
 # Save sequences
 os.makedirs("data/preprocessed/CircleBase", exist_ok=True)
-
-Healthy_person_input = "data/preprocessed/CircleBase/Healthy_person.tsv"
-Cancer_cell_line_input_input = "data/preprocessed/CircleBase/Cancer_cell_line.tsv"
 
 # Function to extract sequences and write to a new file
 def extract_sequences(input_file, genome, label=None):
@@ -67,14 +67,14 @@ def extract_sequences(input_file, genome, label=None):
 # Extract sequences from datasets
 Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, label=0)
 Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, label=0)
-Random_regions_sequneces = extract_sequences(Healthy_person_input, hg38_genome, label=1)
+Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, label=1)
 
-sequences = Random_regions_sequneces + Healthy_person_sequences + Cancer_cell_line_sequences
+sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
 
 print(f"Total sequences: {len(sequences)}")
 
 # Load Tokenizer
-tokenizer = PreTrainedTokenizerFast.from_pretrained("weights/saved_model_classifier_task1")
+tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model_classifier_task1")
 
 #Tokenize
 train_data, eval_data = train_test_split(
@@ -152,7 +152,7 @@ class BiMambaForClassification(PreTrainedModel):
 
 # Load backbone
 def load_mamba(vocab_size):
-    config = AutoConfig.from_pretrained("saved_model/", trust_remote_code=True)
+    config = AutoConfig.from_pretrained("weights/", trust_remote_code=True)
     config.vocab_size = vocab_size
     config.pad_token_id = tokenizer.pad_token_id
 
@@ -160,7 +160,7 @@ def load_mamba(vocab_size):
     return model, config
 
 backbone, config = load_mamba(vocab_size=tokenizer.vocab_size)
-state_dict = load_safetensors("saved_model/model.safetensors")
+state_dict = load_safetensors("weights/model.safetensors")
 backbone.load_state_dict(state_dict)
 
 backbone.eval()
