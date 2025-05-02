@@ -33,7 +33,7 @@ conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
 pip install -r requirements.txt --no-deps
 ```
 ```bash
-pip install datasets pyfaidx==0.8.1.3 mamba_ssm==2.2.4 causal_conv1d==1.5.0.post8 --no-cache-dir --no-build-isolation
+pip install datasets pyfaidx==0.8.1.3 mamba_ssm==2.2.4 causal_conv1d==1.5.0.post8 triton==3.2 --no-cache-dir --no-build-isolation
 ```
 
 ### 5. Training
