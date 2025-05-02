@@ -50,6 +50,11 @@ def download_datasets():
         "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz", 
         os.path.join(download_dir, "hg19.fa")
     )
+
+    download_and_unzip(
+        "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz", 
+        os.path.join(download_dir, "hg38.fa")
+    )
     
     download_and_unzip(
         "http://hgdownload.cse.ucsc.edu/goldenPath/galGal4/bigZips/galGal4.fa.gz", 
