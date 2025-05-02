@@ -2,7 +2,7 @@
 
 This repository is designated for the CSCI2952N group project.
 
-# CycloMamba
+# eccDNAMamba
 
 A reproducible Python 3.9 environment using Conda and pip-based requirements.
 
@@ -27,7 +27,7 @@ pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https
 conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
 ```
 
-### 4. Install CycloMamba Dependencies
+### 4. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
