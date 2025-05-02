@@ -202,10 +202,10 @@ termcolor==2.5.0
 threadpoolctl==3.4.0
 timm==1.0.9
 tokenizers==0.21.1
-torch==2.1.2+cu118
+torch==2.1.2
 torch-tb-profiler==0.4.3
-torchaudio==2.1.0+cu118
-torchvision==0.16.2+cu118
+torchaudio==2.1.0
+torchvision==0.16.2
 tornado==6.4
 tqdm==4.67.1
 tqdm-multiprocess==0.0.11
