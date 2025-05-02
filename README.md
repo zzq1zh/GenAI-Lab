@@ -32,3 +32,37 @@ conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
 ```bash
 pip install -r requirements.txt
 ```
+```bash
+pip install datasets pyfaidx==0.8.1.3 mamba_ssm==2.2.4 causal_conv1d==1.5.0.post8 --no-cache-dir --no-build-isolation
+```
+
+### 5. Training
+```bash
+python main.py
+```
+
+### 6. Fine-tuning
+Download the **pretrained model weights** and **tokenizer files** from the following link, and place them into a folder named `weights` in your project directory:
+
+[Pretrained Model Weights and Tokenizer](https://drive.google.com/drive/folders/1m1iUJX1v1go77Ztzre7isOh8U12sYVoP?usp=sharing)
+
+```bash
+python task1_finetune.py
+```
+```bash
+python task2_finetune.py
+```
+
+### 7. Inference
+Download the **finetuned model weights** and **tokenizer files** for **Task1** and **Task2** from the following links, and place them into in your project directory:
+
+[Finetuned Model Weights and Tokenizer for Task1](https://drive.google.com/drive/folders/10ELKlSUJVmR30HYCi-ICjY4ncEgDTARB?usp=sharing)
+
+[Finetuned Model Weights and Tokenizer for Task2](https://drive.google.com/drive/folders/15-KxmmNHmCqoyTdxhBFoB8pg5rAQe4Xs?usp=sharing)
+
+```bash
+python task1_inference.py
+```
+```bash
+python task2_inference.py
+```
