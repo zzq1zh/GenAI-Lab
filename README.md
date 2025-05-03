@@ -24,7 +24,7 @@ pip install torch==2.2.0+cu121 torchvision==0.17.0 torchaudio==2.2.0 --index-url
 ### 3. Install nvcc via Conda
 
 ```bash
-conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
+conda install -c "nvidia/label/cuda-12.1.105" cuda-nvcc
 ```
 
 ### 4. Install Dependencies
