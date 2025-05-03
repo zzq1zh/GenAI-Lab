@@ -17,7 +17,7 @@ mkdir -p logs
 
 # Load and activate conda environment
 source ~/miniconda3/etc/profile.d/conda.sh
-conda activate cycloMamba
+conda activate genai
 
 # CPU threading tuning
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
