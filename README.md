@@ -54,7 +54,8 @@ python task2_finetune.py
 ```
 
 ### 7. Inference
-Download the **finetuned model weights** and **tokenizer files** for **Task1** and **Task2** from the following links, and place them into in your project directory:
+Download the **finetuned model weights** and **tokenizer files** for **Task1** and **Task2** from the following links, and place them into your project directory under the respective folders:
+`saved_model_classifier_task1` and `saved_model_classifier_task2`:
 
 [Finetuned Model Weights and Tokenizer for Task1](https://drive.google.com/drive/folders/10ELKlSUJVmR30HYCi-ICjY4ncEgDTARB?usp=sharing)
 
