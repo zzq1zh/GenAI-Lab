@@ -111,7 +111,8 @@ def train_model():
             return ids, labels
     
         def _sample_spans(self, ids, L, k, max_sampling_attempts=1000):
-            spans, covered = [], 0
+            spans, covered, attempts = [], 0, 0
+            attempts = 0
             while covered < k and attempts < max_sampling_attempts:
                 attempts += 1
                 span_len = max(1, int(np.random.poisson(self.mean_span_len)))
