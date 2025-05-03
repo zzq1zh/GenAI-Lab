@@ -1,4 +1,19 @@
 import os
+import traceback, signal
+import sys
+def catch_signal(sig, frame):
+    print(f"Caught signal {sig}, likely external kill.")
+    traceback.print_stack()
+    sys.exit(1)
+
+def catch_uncaught_exception(exc_type, exc_value, exc_tb):
+    print("Uncaught Exception:")
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    sys.exit(1)
+
+sys.excepthook = catch_uncaught_exception
+signal.signal(signal.SIGTERM, catch_signal)
+signal.signal(signal.SIGINT, catch_signal)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
@@ -23,6 +38,34 @@ from BiMambaForMaskedLM import BiMambaForMaskedLM
 
 # import wandb
 from transformers.integrations import WandbCallback
+from transformers import TrainerCallback
+import torch, gc, psutil, os
+
+class MemoryTrackerCallback(TrainerCallback):
+    def __init__(self, step_interval=100, log_to_wandb=True):
+        self.step_interval = step_interval
+        self.log_to_wandb = log_to_wandb
+        self.proc = psutil.Process(os.getpid())
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if state.global_step % self.step_interval != 0:
+            return
+
+        cpu_mem_gb = self.proc.memory_info().rss / 1024 ** 3
+        gpu_mem_gb = torch.cuda.memory_allocated() / 1024 ** 3 if torch.cuda.is_available() else 0
+
+        print(f"[Step {state.global_step}] CPU Mem: {cpu_mem_gb:.2f} GB | GPU Mem: {gpu_mem_gb:.2f} GB")
+
+        if self.log_to_wandb and wandb.run is not None:
+            wandb.log({
+                "memory/cpu_rss_gb": cpu_mem_gb,
+                "memory/gpu_allocated_gb": gpu_mem_gb,
+                "global_step": state.global_step
+            })
+
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
 def train_model():
     # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -30,7 +73,8 @@ def train_model():
     # os.environ["MKL_NUM_THREADS"] = "1"
     # os.environ["TORCH_DISTRIBUTED_DEBUG"] = "INFO"
     
-    # wandb.init(project="EccDNA-Foundation-Model", name="Bimamba")
+    if int(os.environ.get("LOCAL_RANK", 0)) == 0:
+        wandb.init(project="EccDNA-Foundation-Model", name="Bi-mamba")
     
     # Load tokenizer
     tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model/")
@@ -47,8 +91,9 @@ def train_model():
     
     # Reconstruct training arguments
     model = BiMambaForMaskedLM(config)
-    model.cuda()    # move to the default GPU
-    
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    model.to(f"cuda:{local_rank}")
+        
     # Data collator for span masking training
     class SpanMaskingCollator:
         """
@@ -62,7 +107,12 @@ def train_model():
                                 tokenizer.pad_token_id}
                                 
         def __call__(self, examples):
-            pairs = [self._mask_span(e["input_ids"]) for e in examples]
+            try:
+                pairs = [self._mask_span(e["input_ids"]) for e in examples]
+            except Exception as e:
+                print(" Error in masking spans. Sample batch:", examples)
+                raise e
+            # pairs = [self._mask_span(e["input_ids"]) for e in examples]
             input_ids, labels = zip(*pairs)
 
             input_ids = [self.append_head_to_tail(seq, copy_len=64) for seq in input_ids]
@@ -149,9 +199,11 @@ def train_model():
     
     training_args = TrainingArguments(
         output_dir="./saved_model/",
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=8,
-        learning_rate=3e-4,
+        per_device_train_batch_size = 6,     # 每卡 batch 变为 6
+        gradient_accumulation_steps = 8,     # 保持有效 batch size
+        dataloader_num_workers = 0, 
+        # callbacks=[MemoryTrackerCallback(step_interval=500)], 
+        learning_rate=5e-4,
         lr_scheduler_type="linear",
         warmup_ratio=0.06,
         num_train_epochs=3,
@@ -183,11 +235,19 @@ def train_model():
         args=training_args,
         train_dataset=tokenized_dataset,
         data_collator=data_collator
+        # callbacks=[MemoryTrackerCallback(step_interval=10)] 
     )
     
     # Resume training
-    trainer.train()
+    try:
+        trainer.train()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
     trainer.save_model("saved_model/final/")
     print("Model saved to saved_model/final/")
 
-train_model()
+if __name__ == "__main__":
+    train_model()
