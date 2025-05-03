@@ -160,7 +160,7 @@ def train_model():
     
             return ids, labels
     
-        def _sample_spans(self, ids, L, k, max_sampling_attempts=1000):
+        def _sample_spans(self, ids, L, k, max_sampling_attempts=200):
             spans, covered, attempts= [], 0, 0
             while covered < k and attempts < max_sampling_attempts:
                 attempts += 1
