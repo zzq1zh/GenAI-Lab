@@ -122,7 +122,6 @@ class BiMambaForMaskedLM(PreTrainedModel):
         labels=None,
         return_dict=True,
     ):
-        # exactly your custom logic…
         if inputs_embeds is None:
             input_ids = input_ids.long()
             inputs_embeds = self.token_embedding(input_ids)
