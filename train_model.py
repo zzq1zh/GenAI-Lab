@@ -200,8 +200,8 @@ def train_model():
     
     training_args = TrainingArguments(
         output_dir="./saved_model/",
-        per_device_train_batch_size = 6,     # 每卡 batch 变为 6
-        gradient_accumulation_steps = 8,     # 保持有效 batch size
+        per_device_train_batch_size = 6,     
+        gradient_accumulation_steps = 8,     
         dataloader_num_workers = 0, 
         # callbacks=[MemoryTrackerCallback(step_interval=500)], 
         learning_rate=5e-4,
