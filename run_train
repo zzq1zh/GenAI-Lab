@@ -14,23 +14,22 @@
 
 
 
-# ───── 环境 ──────────────────────────────────────
+# ───── Env ──────────────────────────────────────
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate genai
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-# ───── 显存 & 通信调试 ───────────────────────────
+# ───── Test ───────────────────────────
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:64
-export CUDA_LAUNCH_BLOCKING=1                # GPU kernel 同步抛错
+export CUDA_LAUNCH_BLOCKING=1                # GPU kernel test
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export NCCL_DEBUG=INFO
 export NCCL_ASYNC_ERROR_HANDLING=1
-# 让 Elastic 把首个 traceback 写文件（>=PyTorch 2.2）
 export TORCHELASTIC_ERROR_FILE=${SLURM_SUBMIT_DIR}/error_%r.json
 
-# ───── 打印节点/设备信息 ─────────────────────────
+# ───── Print Info ─────────────────────────
 echo "====== Job $SLURM_JOB_ID on $SLURM_NODELIST ======"
 nproc
 nvidia-smi
@@ -68,7 +67,7 @@ done) &
 
 GPU_MONITOR_PID=$!
 
-# ───── 分布式启动 ────────────────────────────────
+# ───── DDP ────────────────────────────────
 mkdir -p logs/rank_logs
 export PYTHONUNBUFFERED=1
 
