@@ -83,6 +83,11 @@ train_data, eval_data = train_test_split(
     stratify=[l for _, l in sequences],
     random_state=42
 )
+def circular_augmentation(seq):
+  head = tokenizer(seq, add_special_tokens=True, truncation=False)["input_ids"]
+  circular_aug = head + head[1:65]
+
+  return {"input_ids": circular_aug}
 
 # Encoding function for non-causal language modeling
 class EccDNADataset(torch.utils.data.Dataset):
@@ -95,7 +100,7 @@ class EccDNADataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         seq, label = self.data[idx]
-        encoded = tokenizer(seq, add_special_tokens=True, truncation=False)
+        encoded = circular_augmentation(seq) 
         return {
             "input_ids": encoded["input_ids"],
             "labels": torch.tensor(label)
@@ -140,7 +145,6 @@ class BiMambaForClassification(PreTrainedModel):
 
         # Directly take the [CLS] token's hidden state
         cls_hidden = hidden[:, 0, :]  # (batch_size, hidden_size)
-
         logits = self.classifier(cls_hidden)  # (batch_size, num_classes)
 
         loss = None
@@ -177,10 +181,9 @@ data_collator = DataCollatorWithPadding(
 # Training Arguments
 training_args = TrainingArguments(
     output_dir="./saved_model_classifier_task1_weights/",
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=8,
-    num_train_epochs=3,
-    gradient_accumulation_steps=8,
+    per_device_train_batch_size=64,
+    per_device_eval_batch_size=128,
+    num_train_epochs=10,
     learning_rate=3e-4,
     logging_strategy="steps",   
     logging_steps=10,           
@@ -190,7 +193,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     save_total_limit=2,
     load_best_model_at_end=True,
-    fp16=True,  
+    bf16=True,  
     report_to="none",
     remove_unused_columns=False,
     label_names=["labels"],

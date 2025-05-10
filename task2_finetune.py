@@ -46,7 +46,7 @@ Healthy_person_output = "data/preprocessed/CircleBase/Healthy_person.tsv"
 Cancer_cell_line_input_output = "data/preprocessed/CircleBase/Cancer_cell_line.tsv"
 
 # Function to extract sequences and write to a new file
-def extract_sequences(input_file, genome, label=None):
+def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_col=None, label=None):
     sequences = []
 
     with open(input_file, newline='', encoding='utf-8') as infile:
@@ -54,9 +54,9 @@ def extract_sequences(input_file, genome, label=None):
 
         for row in tqdm(reader, desc=f"Extracting {input_file}"):
             try:
-                chrom = row['chr_hg19']  # Extract chromosome name
-                start = int(float(row['start_hg19'])) - 1  # Convert start position to integer (0-indexed)
-                end = int(float(row['end_hg19']))  # Convert end position to integer
+                chrom = row[chrom_col]  # Extract chromosome name
+                start = int(float(row[start_col])) - 1  # Convert start position to integer (0-indexed)
+                end = int(float(row[end_col]))  # Convert end position to integer
                 seq = genome[chrom][start:end].seq.upper()  # Extract sequence from genome file
                 if 'N' in seq or end - start > 10000:  # Skip sequences with 'N' (unknown bases) and sequences too long
                     continue
@@ -68,9 +68,9 @@ def extract_sequences(input_file, genome, label=None):
     return sequences
 
 # Extract sequences from datasets
-Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, label=0)
-Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, label=0)
-Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, label=1)
+Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
+Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
+Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, chrom_col="chr", start_col="start", end_col="end", label=1)
 
 sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
 
@@ -87,6 +87,12 @@ train_data, eval_data = train_test_split(
     random_state=42
 )
 
+def circular_augmentation(seq):
+  head = tokenizer(seq, add_special_tokens=True, truncation=False)["input_ids"]
+  circular_aug = head + head[1:65]
+
+  return {"input_ids": circular_aug}
+
 # Encoding function for non-causal language modeling
 class EccDNADataset(torch.utils.data.Dataset):
     def __init__(self, data, tokenize):
@@ -98,7 +104,7 @@ class EccDNADataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         seq, label = self.data[idx]
-        encoded = tokenizer(seq, add_special_tokens=True, truncation=False)
+        encoded = circular_augmentation(seq) 
         return {
             "input_ids": encoded["input_ids"],
             "labels": torch.tensor(label)
@@ -180,10 +186,10 @@ data_collator = DataCollatorWithPadding(
 # Training Arguments
 training_args = TrainingArguments(
     output_dir="./saved_model_classifier_task2_weights/",
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=32,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=64,
     num_train_epochs=10,
-    learning_rate=3e-5,
+    learning_rate=3e-4,
     logging_strategy="steps",  
     logging_steps=10,      
     disable_tqdm=True,        
@@ -192,7 +198,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     save_total_limit=1,
     load_best_model_at_end=True,
-    fp16=True, 
+    bf16=True, 
     report_to="none",
     remove_unused_columns=False,
     label_names=["labels"],

@@ -81,6 +81,12 @@ train_data, eval_data = train_test_split(
     random_state=42
 )
 
+def circular_augmentation(seq):
+  head = tokenizer(seq, add_special_tokens=True, truncation=False)["input_ids"]
+  circular_aug = head + head[1:65]
+
+  return {"input_ids": circular_aug}
+
 # Encoding function for non-causal language modeling
 class EccDNADataset(torch.utils.data.Dataset):
     def __init__(self, data, tokenize):
@@ -92,7 +98,7 @@ class EccDNADataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         seq, label = self.data[idx]
-        encoded = tokenizer(seq, add_special_tokens=True, truncation=False)
+        encoded = circular_augmentation(seq) 
         return {
             "input_ids": encoded["input_ids"],
             "labels": torch.tensor(label)
@@ -186,9 +192,10 @@ data_collator = DataCollatorWithPadding(
 # Eval Arguments
 training_args = TrainingArguments(
     output_dir="./results/saved_model_classifier_task1_eval/",
-    per_device_eval_batch_size=32,
+    per_device_eval_batch_size=256,
     do_train=False,
     do_eval=True,
+    bf16=True,
     report_to="none",
 )
 
