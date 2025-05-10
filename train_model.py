@@ -36,7 +36,7 @@ from transformers import AutoConfig, Trainer, TrainingArguments, DataCollatorFor
 from safetensors.torch import load_file as load_safetensors
 from BiMambaForMaskedLM import BiMambaForMaskedLM
 
-# import wandb
+import wandb
 from transformers.integrations import WandbCallback
 from transformers import TrainerCallback
 import torch, gc, psutil, os
@@ -161,7 +161,8 @@ def train_model():
             return ids, labels
     
         def _sample_spans(self, ids, L, k, max_sampling_attempts=200):
-            spans, covered, attempts= [], 0, 0
+            spans, covered = [], 0
+            attempts = 0
             while covered < k and attempts < max_sampling_attempts:
                 attempts += 1
                 span_len = max(1, int(np.random.poisson(self.mean_span_len)))
@@ -199,8 +200,8 @@ def train_model():
     
     training_args = TrainingArguments(
         output_dir="./saved_model/",
-        per_device_train_batch_size = 6,     # 每卡 batch 变为 6
-        gradient_accumulation_steps = 8,     # 保持有效 batch size
+        per_device_train_batch_size = 6,     
+        gradient_accumulation_steps = 8,     
         dataloader_num_workers = 0, 
         # callbacks=[MemoryTrackerCallback(step_interval=500)], 
         learning_rate=5e-4,
@@ -215,9 +216,9 @@ def train_model():
         fp16=False,
         bf16=True,
         remove_unused_columns=False,
-        report_to="none",  # Enable WandB logging
-        run_name="bimamba-4gpu",           # Same as before
-        gradient_checkpointing=False,      # Off to avoid extra memory usage
+        report_to="wandb",  # Enable WandB logging
+        run_name="Bi-mamba",           # Same as before
+        gradient_checkpointing=True,      # Off to avoid extra memory usage
         ddp_find_unused_parameters=True,
         max_grad_norm=1.0 
     )
@@ -234,8 +235,8 @@ def train_model():
         model=model,
         args=training_args,
         train_dataset=tokenized_dataset,
-        data_collator=data_collator
-        # callbacks=[MemoryTrackerCallback(step_interval=10)] 
+        data_collator=data_collator,
+        callbacks=[MemoryTrackerCallback(step_interval=10)] 
     )
     
     # Resume training

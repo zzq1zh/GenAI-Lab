@@ -1,6 +1,6 @@
 # GenAI-Lab
 
-This repository is designated for the CSCI2952N group project.
+This repository is designated for the CSCI2952G group project.
 
 # eccDNAMamba
 
