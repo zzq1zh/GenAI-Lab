@@ -74,7 +74,7 @@ sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] +
 print(f"Total sequences: {len(sequences)}")
 
 # Load Tokenizer
-tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model_classifier_task1")
+tokenizer = PreTrainedTokenizerFast.from_pretrained("saved_model_classifier_task2")
 
 #Tokenize
 train_data, eval_data = train_test_split(
@@ -168,7 +168,7 @@ backbone.eval()
 model = BiMambaForClassification(backbone, hidden_size=768, config=config)
 
 # Load classifier weights
-state_dict = load_safetensors("saved_model_classifier_task1/model.safetensors")
+state_dict = load_safetensors("saved_model_classifier_task2/model.safetensors")
 
 # Load into the model
 missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
@@ -188,7 +188,7 @@ data_collator = DataCollatorWithPadding(
 
 # Eval Arguments
 training_args = TrainingArguments(
-    output_dir="./results/saved_model_classifier_task1_eval/",
+    output_dir="./results/saved_model_classifier_task2_eval/",
     per_device_eval_batch_size=32,
     do_train=False,
     do_eval=True,
