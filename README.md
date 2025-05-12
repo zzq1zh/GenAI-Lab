@@ -44,7 +44,7 @@ python main.py
 ### 6. Fine-tuning
 Download the **pretrained model weights** and **tokenizer files** from the following link, and place them into a folder named `weights` in your project directory:
 
-[Pretrained Model Weights and Tokenizer](https://drive.google.com/drive/folders/1m1iUJX1v1go77Ztzre7isOh8U12sYVoP?usp=sharing)
+[Pretrained Model Weights and Tokenizer](https://drive.google.com/drive/folders/1JUrzrE01Ud0Im7nSv0kJxpPlH6ub8GMd?usp=sharing)
 
 ```bash
 python task1_finetune.py
@@ -57,13 +57,18 @@ python task2_finetune.py
 Download the **finetuned model weights** and **tokenizer files** for **Task1** and **Task2** from the following links, and place them into your project directory under the respective folders:
 `saved_model_classifier_task1` and `saved_model_classifier_task2`:
 
-[Finetuned Model Weights and Tokenizer for Task1](https://drive.google.com/drive/folders/10ELKlSUJVmR30HYCi-ICjY4ncEgDTARB?usp=sharing)
+[Finetuned Model Weights and Tokenizer for Task1](https://drive.google.com/drive/folders/1DqIc70KIN0j1FnekWynaX8y7m5oW8CcM?usp=sharing)
 
 [Finetuned Model Weights and Tokenizer for Task2](https://drive.google.com/drive/folders/15-KxmmNHmCqoyTdxhBFoB8pg5rAQe4Xs?usp=sharing)
+
+[Finetuned Model Weights and Tokenizer for Task3](https://drive.google.com/drive/folders/1dDsHGSo2AEJB_K_YgE5dRdLt4jBeWPpO?usp=sharing)
 
 ```bash
 python task1_inference.py
 ```
 ```bash
 python task2_inference.py
+```
+```bash
+python task3_inference.py
 ```
