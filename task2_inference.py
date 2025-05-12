@@ -43,7 +43,7 @@ Cancer_cell_line_input_input = "data/raw/CircleBase/Cancer_cell_line.tsv"
 os.makedirs("data/preprocessed/CircleBase", exist_ok=True)
 
 # Function to extract sequences and write to a new file
-def extract_sequences(input_file, genome, label=None):
+def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_col=None, label=None):
     sequences = []
 
     with open(input_file, newline='', encoding='utf-8') as infile:
@@ -51,9 +51,9 @@ def extract_sequences(input_file, genome, label=None):
 
         for row in tqdm(reader, desc=f"Extracting {input_file}"):
             try:
-                chrom = row['chr_hg19']  # Extract chromosome name
-                start = int(float(row['start_hg19'])) - 1  # Convert start position to integer (0-indexed)
-                end = int(float(row['end_hg19']))  # Convert end position to integer
+                chrom = row[chrom_col]  # Extract chromosome name
+                start = int(float(row[start_col])) - 1  # Convert start position to integer (0-indexed)
+                end = int(float(row[end_col]))  # Convert end position to integer
                 seq = genome[chrom][start:end].seq.upper()  # Extract sequence from genome file
                 if 'N' in seq or end - start > 10000:  # Skip sequences with 'N' (unknown bases) and sequences too long
                     continue
@@ -65,9 +65,9 @@ def extract_sequences(input_file, genome, label=None):
     return sequences
 
 # Extract sequences from datasets
-Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, label=0)
-Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, label=0)
-Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, label=1)
+Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
+Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
+Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, chrom_col="chr", start_col="start", end_col="end", label=1)
 
 sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
 
