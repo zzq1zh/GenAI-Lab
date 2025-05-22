@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=3
 #SBATCH --cpus-per-task=7
-#SBATCH --mem=256G       #  NEW LINE: use all memory allowed
+#SBATCH --mem=160G       #  NEW LINE: use all memory allowed
 #SBATCH --time=23:00:00
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
