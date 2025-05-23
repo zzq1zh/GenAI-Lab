@@ -31,19 +31,12 @@ import random
 from pyfaidx import Fasta
 
 # Load eccDNA data
-hg19_genome = Fasta('data/genomes/hg19.fa')
-hg38_genome = Fasta('data/genomes/hg38.fa')
+hg19_genome = Fasta('hg19.fa')
 
 # Load reference sequences
-Random_regions_input = "data/raw/hg38/random_hg38.tsv"
-Healthy_person_input = "data/raw/CircleBase/Healthy_person.tsv"
-Cancer_cell_line_input_input = "data/raw/CircleBase/Cancer_cell_line.tsv"
-
-# Save sequences
-os.makedirs("data/preprocessed/CircleBase", exist_ok=True)
-
-Healthy_person_output = "data/preprocessed/CircleBase/Healthy_person.tsv"
-Cancer_cell_line_input_output = "data/preprocessed/CircleBase/Cancer_cell_line.tsv"
+Random_regions_input = "random_hg19_controls_v2.tsv"
+Healthy_person_input = "Healthy_person.tsv"
+Cancer_cell_line_input_input = "Cancer_cell_line.tsv"
 
 # Function to extract sequences and write to a new file
 def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_col=None, label=None):
@@ -66,6 +59,13 @@ def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_co
             sequences.append((seq.upper(), label))
 
     return sequences
+
+# Extract sequences from datasets
+Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=1)
+Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=1)
+Random_regions_sequneces = extract_sequences(Random_regions_input, hg19_genome, chrom_col="chr", start_col="start", end_col="end", label=0)
+
+sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
 
 # Extract sequences from datasets
 Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
