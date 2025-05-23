@@ -24,7 +24,7 @@ from transformers import (
 from safetensors.torch import load_file as load_safetensors
 from BiMambaForMaskedLM import BiMambaForMaskedLM
 import torch.nn as nn
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 import numpy as np
 from torch.utils.data import Subset
 import random
