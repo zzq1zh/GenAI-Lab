@@ -31,12 +31,12 @@ import random
 from pyfaidx import Fasta
 
 # Load eccDNA data
-hg19_genome = Fasta('hg19.fa')
+hg19_genome = Fasta('data/genomes/hg19.fa')
 
 # Load reference sequences
-Random_regions_input = "random_hg19_controls_v2.tsv"
-Healthy_person_input = "Healthy_person.tsv"
-Cancer_cell_line_input_input = "Cancer_cell_line.tsv"
+Random_regions_input = "data/raw/hg38/random_hg19_controls_v2.tsv"
+Healthy_person_input = "data/raw/CircleBase/Healthy_person.tsv"
+Cancer_cell_line_input_input = "data/raw/CircleBase/Cancer_cell_line.tsv"
 
 # Function to extract sequences and write to a new file
 def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_col=None, label=None):
@@ -51,13 +51,14 @@ def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_co
                 start = int(float(row[start_col])) - 1  # Convert start position to integer (0-indexed)
                 end = int(float(row[end_col]))  # Convert end position to integer
                 seq = genome[chrom][start:end].seq.upper()  # Extract sequence from genome file
-                if 'N' in seq or end - start > 10000:  # Skip sequences with 'N' (unknown bases) and sequences too long
+                if 'N' in seq or end - start > 200000:  # Skip sequences with 'N' (unknown bases) and sequences too long
                     continue
             except Exception as e:
                 continue
 
             sequences.append((seq.upper(), label))
-            
+
+    
     short_seqs = [seq for seq in sequences if 0 < len(seq[0]) < 1000]
     long_seqs = [seq for seq in sequences if 1000 < len(seq[0]) < 200000]
 
@@ -88,13 +89,6 @@ def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_co
 Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=1)
 Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=1)
 Random_regions_sequneces = extract_sequences(Random_regions_input, hg19_genome, chrom_col="chr", start_col="start", end_col="end", label=0)
-
-sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
-
-# Extract sequences from datasets
-Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
-Cancer_cell_line_sequences = extract_sequences(Cancer_cell_line_input_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=0)
-Random_regions_sequneces = extract_sequences(Random_regions_input, hg38_genome, chrom_col="chr", start_col="start", end_col="end", label=1)
 
 sequences = Random_regions_sequneces[:10000] + Healthy_person_sequences[:5000] + Cancer_cell_line_sequences[:5000]
 
@@ -210,8 +204,9 @@ data_collator = DataCollatorWithPadding(
 # Training Arguments
 training_args = TrainingArguments(
     output_dir="./saved_model_classifier_task2_weights/",
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=64,
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=4,
+    gradient_accumulation_steps=8,
     num_train_epochs=10,
     learning_rate=3e-4,
     logging_strategy="steps",  
@@ -248,6 +243,7 @@ def compute_metrics(eval_pred):
         "precision": precision,
         "recall": recall
     }
+
 
 trainer = Trainer(
     model=model,
