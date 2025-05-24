@@ -213,8 +213,17 @@ def compute_metrics(eval_pred):
     preds = torch.argmax(torch.tensor(logits), dim=1).numpy()
     labels = torch.tensor(labels).numpy()
 
-    f1 = f1_score(labels, preds, average='macro') 
-    return {"f1": f1}
+    acc = accuracy_score(labels, preds)
+    f1 = f1_score(labels, preds, average='macro')
+    precision = precision_score(labels, preds, average='macro', zero_division=0)
+    recall = recall_score(labels, preds, average='macro', zero_division=0)
+
+    return {
+        "accuracy": acc,
+        "f1": f1,
+        "precision": precision,
+        "recall": recall
+    }
 
 trainer = Trainer(
     model=model,
