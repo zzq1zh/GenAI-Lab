@@ -57,8 +57,32 @@ def extract_sequences(input_file, genome, chrom_col=None, start_col=None, end_co
                 continue
 
             sequences.append((seq.upper(), label))
+            
+    short_seqs = [seq for seq in sequences if 0 < len(seq[0]) < 1000]
+    long_seqs = [seq for seq in sequences if 1000 < len(seq[0]) < 200000]
 
-    return sequences
+    min_len = min(len(short_seqs), len(long_seqs))
+
+    short_sample=short_seqs[:min_len]
+    long_sample=long_seqs[:min_len]
+
+    print(f"Number of short sequences: {len(short_sample)}")
+    print(f"Number of long sequences: {len(long_sample)}")
+
+    # Ensure both groups have the same number of samples for strict 1:1 interleaving
+    assert len(short_sample) == len(long_sample), "Two groups must be equal in length for 1:1 strict interleaving."
+
+    mixed_sequences = []
+    for short, long in zip(short_sample, long_sample):
+        mixed_sequences.append(short)  # Add a short sequence
+        mixed_sequences.append(long)   # Followed by a long sequence
+
+    random.seed(42)
+    random.shuffle(mixed_sequences)
+
+    print(f"Number of mixed sequences: {len(mixed_sequences)}")
+
+    return mixed_sequences
 
 # Extract sequences from datasets
 Healthy_person_sequences  = extract_sequences(Healthy_person_input, hg19_genome, chrom_col="chr_hg19", start_col="start_hg19", end_col="end_hg19", label=1)
