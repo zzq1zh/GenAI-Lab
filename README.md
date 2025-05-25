@@ -36,15 +36,12 @@ pip install -r requirements.txt --no-deps
 pip install datasets numpy==1.26.3 pyfaidx==0.8.1.3 mamba_ssm==2.2.4 causal_conv1d==1.5.0.post8 --no-cache-dir --no-build-isolation
 ```
 
-### 5. Training
+### 5. Pre-training
 ```bash
 python main.py
 ```
 
 ### 6. Fine-tuning
-Download the **pretrained model weights** and **tokenizer files** from the following link, and place them into a folder named `weights` in your project directory:
-
-[Pretrained Model Weights and Tokenizer](https://drive.google.com/drive/folders/1JUrzrE01Ud0Im7nSv0kJxpPlH6ub8GMd?usp=sharing)
 
 ```bash
 python task1_finetune.py
@@ -54,14 +51,6 @@ python task2_finetune.py
 ```
 
 ### 7. Inference
-Download the **finetuned model weights** and **tokenizer files** for **Task1** and **Task2** from the following links, and place them into your project directory under the respective folders:
-`saved_model_classifier_task1` and `saved_model_classifier_task2`:
-
-[Finetuned Model Weights and Tokenizer for Task1](https://drive.google.com/drive/folders/1DqIc70KIN0j1FnekWynaX8y7m5oW8CcM?usp=sharing)
-
-[Finetuned Model Weights and Tokenizer for Task2](https://drive.google.com/drive/folders/15-KxmmNHmCqoyTdxhBFoB8pg5rAQe4Xs?usp=sharing)
-
-[Finetuned Model Weights and Tokenizer for Task3](https://drive.google.com/drive/folders/1dDsHGSo2AEJB_K_YgE5dRdLt4jBeWPpO?usp=sharing)
 
 ```bash
 python task1_inference.py
