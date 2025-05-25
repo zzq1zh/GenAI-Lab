@@ -8,7 +8,6 @@
 #SBATCH --mem=256G                   # Use all memory allowed
 #SBATCH --time=12:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=zliu328@brown.edu
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 
