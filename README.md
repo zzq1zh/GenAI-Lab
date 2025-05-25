@@ -53,7 +53,9 @@ python task1_finetune.py
 ```bash
 python task2_finetune.py
 ```
-
+```bash
+python task3_finetune.py
+```
 ### 7. Inference
 
 ```bash
