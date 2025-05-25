@@ -43,6 +43,10 @@ python main.py
 
 ### 6. Fine-tuning
 
+Download the **pretrained model weights** and **tokenizer files** from the following link, and place them into a folder named `weights` in your project directory:
+
+[Pretrained Model Weights and Tokenizer](https://drive.google.com/drive/folders/1JUrzrE01Ud0Im7nSv0kJxpPlH6ub8GMd?usp=sharing)
+
 ```bash
 python task1_finetune.py
 ```
